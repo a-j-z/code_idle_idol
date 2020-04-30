@@ -7,9 +7,15 @@ using System;
 
 public class LevelParse : MonoBehaviour
 {
-    public static Dictionary<Vector3Int, string> ParseFile(string path)
+    public static Dictionary<string, List<Vector3Int>> ParseFile(string path)
     {
-        Dictionary<Vector3Int, string> output = new Dictionary<Vector3Int, string>();
+        Dictionary<string, List<Vector3Int>> output = new Dictionary<string, List<Vector3Int>>();
+
+        string[] tileTypes = GetTileTypes();
+        for (int i = 0; i < tileTypes.Length; i++)
+        {
+            output.Add(tileTypes[i], new List<Vector3Int>());
+        }
 
         StreamReader reader;
         try
@@ -64,7 +70,7 @@ public class LevelParse : MonoBehaviour
                         id = words[0];
 
                         //Add to dictionary
-                        output.Add(new Vector3Int(x, y, 0), id);
+                        output[id].Add(new Vector3Int(x, y, 0));
                     }
                 }
                 lineNumber++;
@@ -76,24 +82,48 @@ public class LevelParse : MonoBehaviour
         return output;
     }
 
-    public static void EncodeFile(Dictionary<Vector3Int, string> tiles, string path)
+    public static void EncodeFile(Dictionary<string, List<Vector3Int>> tiles, string path)
     {
         string output = "#validate";
 
-        foreach (KeyValuePair<Vector3Int, string> entry in tiles)
+        foreach (KeyValuePair<string, List<Vector3Int>> entry in tiles)
         {
-            output += "\n";
-            output += entry.Value + " ";
-            output += entry.Key.x + " " + entry.Key.y;
+            foreach (Vector3Int location in entry.Value)
+            {
+                output += "\n";
+                output += entry.Key + " ";
+                output += location.x + " " + location.y;
+            }
         }
 
-        StreamWriter writer = new StreamWriter(path, false);
-        writer.Write(output);
-        writer.Close();
+        try
+        {
+            StreamWriter writer = new StreamWriter(path, false);
+            writer.Write(output);
+            writer.Close();
+        }
+        catch (ArgumentException)
+        {
+            Debug.Log("could not write in this file.");
+            throw new ArgumentException();
+        }
+    }
+
+    public static string[] GetTileTypes()
+    {
+        string[] tileTypes = Directory.GetDirectories(Application.dataPath + "/Resources/Tiles");
+
+        string[] splitTileType;
+        string tileType;
+        char[] splitter = { '/', '\\' };
+
+        for (int i = 0; i < tileTypes.Length; i++)
+        {
+            splitTileType = tileTypes[i].Split(splitter);
+            tileType = splitTileType[splitTileType.Length - 1];
+            tileTypes[i] = tileType;
+        }
+
+        return tileTypes;
     }
 }
-
-/*
- TODO:
- Handle repeated tiles, throw exception
-     */

@@ -26,14 +26,17 @@ public class PlayManager : MonoBehaviour
     {
         buildCam.enabled = false;
         playCam.enabled = true;
+
         player.SetActive(true);
 
         cursor.SetActive(false);
         buildUiContainer.SetActive(false);
         playUiContainer.SetActive(true);
 
-        player.transform.position = spawn.transform.position;
         spawn.SetActive(false);
+        player.transform.position = spawn.transform.position;
+        playCam.transform.position = player.transform.position + Vector3.back * 10f;
+
         isPlay = true;
     }
 

@@ -18,7 +18,7 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
-        cam.orthographicSize -= Input.GetAxis("Mouse ScrollWheel") * scrollSensitivity;
+        cam.orthographicSize *= 1.0f + Input.GetAxis("Mouse ScrollWheel") * scrollSensitivity;
         
         if (Input.GetMouseButton(2))
         {

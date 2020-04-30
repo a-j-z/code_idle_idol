@@ -26,6 +26,5 @@ public class PlayCameraController : MonoBehaviour
             Vector3.up * lookAheadY * player.GetComponent<Character>().getYVel(); */
 
         transform.position = Vector3.SmoothDamp(transform.position, destination, ref velocity, smooth);
-        //transform.position = destination;
     }
 }
