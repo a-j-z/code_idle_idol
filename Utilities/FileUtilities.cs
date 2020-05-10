@@ -7,7 +7,7 @@ public class FileUtilities : MonoBehaviour
 {
     public static string SaveDialog()
     {
-        string path = StandaloneFileBrowser.SaveFilePanel("Load Level", "", "level.lvl", "lvl");
+        string path = StandaloneFileBrowser.SaveFilePanel("Save Level", "", "level.lvl", "lvl");
         return path;
     }
 

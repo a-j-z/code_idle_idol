@@ -38,7 +38,7 @@ public class PlayerController : MonoBehaviour
         Vector3 targetVelocity = new Vector2(move * 10f, m_Rigidbody.velocity.y);
         m_Rigidbody.velocity = Vector3.SmoothDamp(m_Rigidbody.velocity, targetVelocity, ref m_Velocity, movementSmoothing);
 
-        if (collisionDown && jump)
+        if (collisionDown && jump && Mathf.Abs(m_Rigidbody.velocity.y) < 0.1f)
         {
             m_Rigidbody.AddForce(new Vector2(0f, jumpForce), ForceMode2D.Impulse);
         }

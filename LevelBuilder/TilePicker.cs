@@ -1,10 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class TilePicker : MonoBehaviour
 {
-    public static string GetTile(List<Vector3Int> tiles, Vector3Int location, string type)
+    public static string GetTile(List<Vector3Int> tiles, Vector3Int location, string type, List<string> tileNames)
     {
         string output = "";
 
@@ -54,6 +55,11 @@ public class TilePicker : MonoBehaviour
              tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)))
         { output += "h"; }
 
+        if (!tileNames.Contains(output + "_" + type + "_1"))
+        {
+            return "_" + type + "_1";
+        }
+
         return output + "_" + type + "_1";
     }
 
@@ -64,93 +70,107 @@ public class TilePicker : MonoBehaviour
         float radius = center.x * size;
         string spriteName = sprite.name.Split('_')[0];
 
-        Vector2[] boxInside = {
-            new Vector2(center.x - radius, center.y - radius),
-            new Vector2(center.x - radius, center.y + radius),
-            new Vector2(center.x + radius, center.y + radius),
-            new Vector2(center.x + radius, center.y - radius)
-        }; output.Add(boxInside);
+        List<Vector2> vertices = new List<Vector2>();
+
+        vertices.Add(new Vector2(center.x - radius, center.y - radius));
+        vertices.Add(new Vector2(center.x - radius, center.y + radius));
+        vertices.Add(new Vector2(center.x + radius, center.y + radius));
+        vertices.Add(new Vector2(center.x + radius, center.y - radius));
 
         if (spriteName.Contains("a"))
         {
-            Vector2[] boxTopLeft = {
-                new Vector2(0, sprite.rect.size.y),
-                new Vector2(0, center.y + radius),
-                new Vector2(center.x - radius, center.y + radius),
-                new Vector2(center.x - radius, sprite.rect.size.y)
-            }; output.Add(boxTopLeft);
+            vertices.Add(new Vector2(0, sprite.rect.size.y));
+            vertices.Add(new Vector2(0, center.y + radius));
+            vertices.Add(new Vector2(center.x - radius, sprite.rect.size.y));
+            
         }
 
         if (spriteName.Contains("b"))
         {
-            Vector2[] boxTop = {
-                new Vector2(center.x - radius, sprite.rect.size.y),
-                new Vector2(center.x - radius, center.y + radius),
-                new Vector2(center.x + radius, center.y + radius),
-                new Vector2(center.x + radius, sprite.rect.size.y)
-            }; output.Add(boxTop);
+            vertices.Add(new Vector2(center.x - radius, sprite.rect.size.y));
+            vertices.Add(new Vector2(center.x - radius, center.y + radius));
+            vertices.Add(new Vector2(center.x + radius, center.y + radius));
+            vertices.Add(new Vector2(center.x + radius, sprite.rect.size.y));
         }
 
         if (spriteName.Contains("c"))
         {
-            Vector2[] boxTopRight = {
-                new Vector2(center.x + radius, sprite.rect.size.y),
-                new Vector2(center.x + radius, center.y + radius),
-                new Vector2(sprite.rect.size.x, center.y + radius),
-                new Vector2(sprite.rect.size.x, sprite.rect.size.y)
-            }; output.Add(boxTopRight);
+            vertices.Add(new Vector2(center.x + radius, sprite.rect.size.y));
+            vertices.Add(new Vector2(sprite.rect.size.x, center.y + radius));
+            vertices.Add(new Vector2(sprite.rect.size.x, sprite.rect.size.y));
         }
 
         if (spriteName.Contains("d"))
         {
-            Vector2[] boxLeft = {
-                new Vector2(0, center.y - radius),
-                new Vector2(0, center.y + radius),
-                new Vector2(center.x - radius, center.y + radius),
-                new Vector2(center.x - radius, center.y - radius)
-            }; output.Add(boxLeft);
+            vertices.Add(new Vector2(0, center.y - radius));
+            vertices.Add(new Vector2(0, center.y + radius));
+            vertices.Add(new Vector2(center.x - radius, center.y + radius));
+            vertices.Add(new Vector2(center.x - radius, center.y - radius));
         }
 
         if (spriteName.Contains("e"))
         {
-            Vector2[] boxRight = {
-                new Vector2(center.x + radius, center.y - radius),
-                new Vector2(center.x + radius, center.y + radius),
-                new Vector2(sprite.rect.size.x, center.y + radius),
-                new Vector2(sprite.rect.size.x, center.y - radius)
-            }; output.Add(boxRight);
+            vertices.Add(new Vector2(center.x + radius, center.y - radius));
+            vertices.Add(new Vector2(center.x + radius, center.y + radius));
+            vertices.Add(new Vector2(sprite.rect.size.x, center.y + radius));
+            vertices.Add(new Vector2(sprite.rect.size.x, center.y - radius));
         }
 
         if (spriteName.Contains("f"))
         {
-            Vector2[] boxBottomLeft = {
-                new Vector2(0, 0),
-                new Vector2(0, center.y - radius),
-                new Vector2(center.x - radius, center.y - radius),
-                new Vector2(center.x - radius, 0)
-            }; output.Add(boxBottomLeft);
+            vertices.Add(new Vector2(0, 0));
+            vertices.Add(new Vector2(0, center.y - radius));
+            vertices.Add(new Vector2(center.x - radius, 0));
         }
 
         if (spriteName.Contains("g"))
         {
-            Vector2[] boxBottom = {
-                new Vector2(center.x - radius, 0),
-                new Vector2(center.x - radius, center.y - radius),
-                new Vector2(center.x + radius, center.y - radius),
-                new Vector2(center.x + radius, 0)
-            }; output.Add(boxBottom);
+            vertices.Add(new Vector2(center.x - radius, 0));
+            vertices.Add(new Vector2(center.x - radius, center.y - radius));
+            vertices.Add(new Vector2(center.x + radius, center.y - radius));
+            vertices.Add(new Vector2(center.x + radius, 0));
         }
 
         if (spriteName.Contains("h"))
         {
-            Vector2[] boxBottomRight = {
-                new Vector2(center.x + radius, 0),
-                new Vector2(center.x + radius, center.y - radius),
-                new Vector2(sprite.rect.size.x, center.y - radius),
-                new Vector2(sprite.rect.size.x, 0)
-            }; output.Add(boxBottomRight);
+            vertices.Add(new Vector2(center.x + radius, 0));
+            vertices.Add(new Vector2(sprite.rect.size.x, center.y - radius));
+            vertices.Add(new Vector2(sprite.rect.size.x, 0));
         }
 
+        List<Vector2> verticesUnique = vertices.Distinct().ToList();
+
+        if (spriteName.Contains("a")) verticesUnique.Remove(new Vector2(center.x - radius, center.y + radius));
+        if (spriteName.Contains("c")) verticesUnique.Remove(new Vector2(center.x + radius, center.y + radius));
+        if (spriteName.Contains("f")) verticesUnique.Remove(new Vector2(center.x - radius, center.y - radius));
+        if (spriteName.Contains("h")) verticesUnique.Remove(new Vector2(center.x + radius, center.y - radius));
+
+        Vector2[] uniqueArray = verticesUnique.ToArray();
+        AngleSort(uniqueArray, center);
+        output.Add(uniqueArray);
+
         return output;
+    }
+
+    public static void AngleSort(Vector2[] vertices, Vector2 center)
+    {
+        int n = vertices.Length;
+        for (int i = 1; i < n; ++i)
+        {
+            Vector2 key = vertices[i];
+            int j = i - 1;
+
+            while (j >= 0 && VectorAngle(vertices[j], center) > VectorAngle(key, center))
+            {
+                vertices[j + 1] = vertices[j];
+                j = j - 1;
+            }
+            vertices[j + 1] = key;
+        }
+    }
+
+    public static float VectorAngle(Vector2 v, Vector2 center)
+    {
+        return Vector2.SignedAngle(new Vector2(0, 1), v - center);
     }
 }

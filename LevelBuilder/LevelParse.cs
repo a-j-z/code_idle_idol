@@ -48,7 +48,7 @@ public class LevelParse : MonoBehaviour
                             throw new NullReferenceException();
                         }
                     }
-                    else
+                    else if (words[0] != ">" && words[0] != "!")
                     {
                         if (words.Length != 3)
                         {
@@ -63,6 +63,7 @@ public class LevelParse : MonoBehaviour
                         }
                         catch (FormatException)
                         {
+
                             Debug.Log(path + ": Line " + lineNumber + ": unable to convert value to int.");
                             throw new NullReferenceException();
                         }
@@ -82,7 +83,59 @@ public class LevelParse : MonoBehaviour
         return output;
     }
 
-    public static void EncodeFile(Dictionary<string, List<Vector3Int>> tiles, string path)
+    // > = palette type
+    // ! = palette layer order
+    public static Dictionary<string, int> ParsePaletteInfo(string path, string identifier)
+    {
+        Dictionary<string, int> output = new Dictionary<string, int>();
+
+        StreamReader reader;
+        try
+        {
+            reader = new StreamReader(path, Encoding.Default);
+        }
+        catch (Exception)
+        {
+            Debug.Log(path + ": Path invalid.");
+            throw new NullReferenceException();
+        }
+
+        string line;
+        int paletteType;
+
+        int lineNumber = 1;
+        using (reader)
+        {
+            do
+            {
+                line = reader.ReadLine();
+                if (line != null)
+                {
+                    string[] words = line.Split(' ');
+                    if (words[0] == identifier)
+                    {
+                        try
+                        {
+                            paletteType = Int32.Parse(words[2]);
+                        }
+                        catch (FormatException)
+                        {
+                            Debug.Log(path + ": Line " + lineNumber + ": unable to convert value " + words[2] + " to int.");
+                            throw new NullReferenceException();
+                        }
+                        output.Add(words[1], paletteType);
+                    }
+                }
+                lineNumber++;
+            }
+            while (line != null);
+        }
+        reader.Close();
+
+        return output;
+    }
+
+    public static void EncodeFile(Dictionary<string, List<Vector3Int>> tiles, Dictionary<string, int> paletteTypes, Dictionary<string, int> layerOrder, string path)
     {
         string output = "#validate";
 
@@ -94,6 +147,18 @@ public class LevelParse : MonoBehaviour
                 output += entry.Key + " ";
                 output += location.x + " " + location.y;
             }
+        }
+
+        foreach (KeyValuePair<string, int> entry in paletteTypes)
+        {
+            output += "\n> ";
+            output += entry.Key + " " + entry.Value;
+        }
+
+        foreach (KeyValuePair<string, int> entry in layerOrder)
+        {
+            output += "\n! ";
+            output += entry.Key + " " + entry.Value;
         }
 
         try

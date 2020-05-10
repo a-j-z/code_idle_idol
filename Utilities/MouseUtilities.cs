@@ -15,8 +15,9 @@ public class MouseUtilities : MonoBehaviour
         return new Vector3Int((int)Mathf.Round(WorldSpace(cam).x), (int)Mathf.Round(WorldSpace(cam).y), 0);
     }
 
-    public static bool TouchingUI(Camera cam, float uiHeight)
+    public static bool TouchingUI(RectTransform rt)
     {
-        return Input.mousePosition.y > Screen.height - uiHeight;
+        Vector2 localMousePosition = rt.InverseTransformPoint(Input.mousePosition);
+        return rt.rect.Contains(localMousePosition);
     }
 }

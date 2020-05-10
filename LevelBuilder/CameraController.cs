@@ -5,6 +5,9 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
     public float scrollSensitivity;
+    public float maxSize;
+    public float minSize;
+    public PaletteMenuManager paletteMenuManager;
 
     private Camera cam;
     private Vector3 panStart;
@@ -18,12 +21,17 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
-        cam.orthographicSize *= 1.0f + Input.GetAxis("Mouse ScrollWheel") * scrollSensitivity;
-        
-        if (Input.GetMouseButton(2))
+        if (!paletteMenuManager.IsPaletteMenuActive())
         {
-            transform.position += panStart - MouseUtilities.WorldSpace(cam);
+            cam.orthographicSize *= 1.0f - Input.GetAxis("Mouse ScrollWheel") * scrollSensitivity;
+            if (cam.orthographicSize > maxSize) cam.orthographicSize = maxSize;
+            if (cam.orthographicSize < minSize) cam.orthographicSize = minSize;
+
+            if (Input.GetMouseButton(2))
+            {
+                transform.position += panStart - MouseUtilities.WorldSpace(cam);
+            }
+            panStart = MouseUtilities.WorldSpace(cam);
         }
-        panStart = MouseUtilities.WorldSpace(cam);
     }
 }
