@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class PlayManager : MonoBehaviour
 {
     public GameObject player;
+    public GameObject idol;
     public GameObject spawn;
 
     public Camera buildCam;
@@ -28,6 +29,7 @@ public class PlayManager : MonoBehaviour
         playCam.enabled = true;
 
         player.SetActive(true);
+        idol.SetActive(true);
 
         cursor.SetActive(false);
         buildUiContainer.SetActive(false);
@@ -35,6 +37,7 @@ public class PlayManager : MonoBehaviour
 
         spawn.SetActive(false);
         player.transform.position = spawn.transform.position;
+        idol.transform.position = spawn.transform.position + Vector3.up + Vector3.back;
         playCam.transform.position = player.transform.position + Vector3.back * 10f;
 
         isPlay = true;
@@ -45,6 +48,7 @@ public class PlayManager : MonoBehaviour
         buildCam.enabled = true;
         playCam.enabled = false;
         player.SetActive(false);
+        idol.SetActive(false);
         
         cursor.SetActive(true);
         buildUiContainer.SetActive(true);

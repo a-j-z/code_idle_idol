@@ -23,8 +23,10 @@ public class LevelDraw : MonoBehaviour
 {
     public Camera cam;
     public PaletteMenuManager paletteMenuManager;
+    public BoxCollider2D playerSemisolidCollider;
 
     private string[] tileTypes;
+    private Dictionary<string, float> tileSizes;
     private Dictionary<string, Tilemap> tilemaps;
     private Dictionary<string, PaletteType> paletteTypes;
     private Dictionary<string, List<Vector3Int>> tiles;
@@ -43,6 +45,7 @@ public class LevelDraw : MonoBehaviour
     {
         tileTypes = LevelParse.GetTileTypes();
         loadedTiles = new Dictionary<string, Tile>();
+        tileSizes = LevelParse.LoadTileSizes();
         tilemaps = new Dictionary<string, Tilemap>();
         paletteTypes = new Dictionary<string, PaletteType>();
         tiles = new Dictionary<string, List<Vector3Int>>();
@@ -102,22 +105,28 @@ public class LevelDraw : MonoBehaviour
                 DrawTileRect(tileTypes[currentPalette], currMousePos, prevMousePos, draw);
             }
         }
+        UpdatePalettes();
     }
 
-    public void UpdatePalettes(string paletteName)
+    public void UpdatePalettes(string paletteName = "")
     {
-        paletteTypes[paletteName]++;
-        if (paletteTypes[paletteName] > PaletteType.Semisolid)
+        if (!paletteName.Equals(""))
         {
-            paletteTypes[paletteName] = PaletteType.Collidable;
+            paletteTypes[paletteName]++;
+            if (paletteTypes[paletteName] > PaletteType.Semisolid)
+            {
+                paletteTypes[paletteName] = PaletteType.Collidable;
+            }
         }
 
         TilemapCollider2D collider;
         PlatformEffector2D effector;
+        CompositeCollider2D colliderComposite;
         foreach (KeyValuePair<string, PaletteType> entry in paletteTypes)
         {
             collider = tilemaps[entry.Key].gameObject.GetComponent<TilemapCollider2D>();
             effector = tilemaps[entry.Key].gameObject.GetComponent<PlatformEffector2D>();
+            colliderComposite = tilemaps[entry.Key].gameObject.GetComponent<CompositeCollider2D>();
             if (entry.Value == PaletteType.Collidable)
             {
                 collider.enabled = true;
@@ -129,8 +138,21 @@ public class LevelDraw : MonoBehaviour
             }
             else if (entry.Value == PaletteType.Semisolid)
             {
+                effector.surfaceArc = 1f;
+
                 collider.enabled = true;
-                effector.surfaceArc = 180f;
+                Collider2D[] colliders = new Collider2D[tileTypes.Length];
+                ContactFilter2D contactFilter = new ContactFilter2D();
+                contactFilter = contactFilter.NoFilter();
+                int overlapCount = Physics2D.OverlapCollider(playerSemisolidCollider, contactFilter, colliders);
+                for (int i = 0; i < overlapCount; i++)
+                {
+                    if (colliders[i].gameObject.name.Equals(collider.gameObject.name))
+                    {
+                        collider.enabled = false;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -155,7 +177,7 @@ public class LevelDraw : MonoBehaviour
                 splitFileName = fileArray[j].Split(splitter);
                 fileName = splitFileName[splitFileName.Length - 1].Split('.')[0];
                 tileSprite = Resources.Load<Sprite>("Tiles/" + tileTypes[i] + "/" + fileName);
-                tileSprite.OverridePhysicsShape(TilePicker.GeneratePhysicsShape(0.6f, tileSprite));
+                tileSprite.OverridePhysicsShape(TilePicker.GeneratePhysicsShape(tileSizes[tileTypes[i]], tileSprite));
                 tile = ScriptableObject.CreateInstance("Tile") as Tile;
                 tile.sprite = tileSprite;
                 loadedTiles.Add(fileName, tile);
@@ -165,15 +187,17 @@ public class LevelDraw : MonoBehaviour
         tileNames = new List<string>(loadedTiles.Keys);
 
         GameObject tilemap = new GameObject();
+        tilemap.layer = 8;
         tilemap.AddComponent<Tilemap>();
         tilemap.AddComponent<TilemapRenderer>();
         tilemap.AddComponent<TilemapCollider2D>();
-        tilemap.GetComponent<TilemapCollider2D>().usedByComposite = true;
         tilemap.AddComponent<CompositeCollider2D>();
         tilemap.AddComponent<PlatformEffector2D>();
 
+        tilemap.GetComponent<TilemapCollider2D>().usedByComposite = true;
         tilemap.GetComponent<PlatformEffector2D>().surfaceArc = 360f;
         tilemap.GetComponent<CompositeCollider2D>().usedByEffector = true;
+        tilemap.GetComponent<CompositeCollider2D>().geometryType = CompositeCollider2D.GeometryType.Polygons;
         tilemap.GetComponent<Rigidbody2D>().isKinematic = true;
 
         GameObject currentMap;
@@ -291,7 +315,6 @@ public class LevelDraw : MonoBehaviour
 
     public string GetLayer(float z)
     {
-        //Debug.Log(z);
         string output = "";
         foreach(KeyValuePair<string, Tilemap> entry in tilemaps)
         {

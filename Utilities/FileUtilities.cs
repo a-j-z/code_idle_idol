@@ -14,6 +14,7 @@ public class FileUtilities : MonoBehaviour
     public static string LoadDialog()
     {
         string[] path = StandaloneFileBrowser.OpenFilePanel("Load Level", "", "lvl", false);
-        return path[0];
+        if (path.Length > 0) return path[0];
+        else return "";
     }
 }

@@ -191,4 +191,57 @@ public class LevelParse : MonoBehaviour
 
         return tileTypes;
     }
+
+    public static Dictionary<string, float> LoadTileSizes()
+    {
+        Dictionary<string, float> output = new Dictionary<string, float>();
+
+        StreamReader reader;
+        try
+        {
+            reader = new StreamReader(Application.dataPath + "/Resources/Tiles/sizes.txt", Encoding.Default);
+        }
+        catch (Exception)
+        {
+            Debug.Log("Could not open sizes.txt.");
+            throw new NullReferenceException();
+        }
+
+        string line, id;
+        float size;
+
+        int lineNumber = 1;
+        using (reader)
+        {
+            do
+            {
+                line = reader.ReadLine();
+                if (line != null)
+                {
+                    string[] words = line.Split(' ');
+                    if (words.Length != 2)
+                    {
+                        Debug.Log("sizes.txt: Line " + lineNumber + ": format invalid.");
+                        throw new NullReferenceException();
+                    }
+                    try
+                    {
+                        size = float.Parse(words[1]);
+                    }
+                    catch (FormatException)
+                    {
+                        Debug.Log("sizes.txt: Line " + lineNumber + ": unable to convert value to int.");
+                        throw new NullReferenceException();
+                    }
+                    id = words[0];
+                    output.Add(id, size);
+                }
+                lineNumber++;
+            }
+            while (line != null);
+        }
+        reader.Close();
+
+        return output;
+    }
 }

@@ -1,18 +1,34 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class PlayerController : MonoBehaviour
 {
-    public float movementSmoothing = 0.1f;
-    public float gravity = 10f;
-    public float gravityMultiplier = 2f;
-    public float jumpForce = 400f;
+    public float movementSmoothing = 3f;
+    public float jumpUpSpeed = 10f;
+    public float jumpDownSpeed = 10f;
+    public float jumpHeight = 3f;
+    public float jumpPeakSmooth = 200f;
+    public float coyoteTime = 0.1f;
     [SerializeField] private LayerMask layer = new LayerMask();
-    
+
+    private float jumpStartHeight;
+    private bool canJump;
+    private bool canExtendJump;
+    private bool stillHoldingJump;
+
     private bool collisionDown;
     private bool collisionDownEnter;
+    private float collisionDownTimer;
+
+    private bool collisionUp;
+    private bool collisionUpEnter;
+    private bool collisionUpLeft;
+    private bool collisionUpRight;
+    private bool collisionUpMiddle;
+
+    private float collisionLeftStep;
+    private float collisionRightStep;
+    private float detectDistance;
 
     private Rigidbody2D m_Rigidbody;
     private BoxCollider2D m_boxCollider;
@@ -23,56 +39,94 @@ public class PlayerController : MonoBehaviour
         m_Rigidbody = GetComponent<Rigidbody2D>();
         m_boxCollider = GetComponent<BoxCollider2D>();
         collisionDown = false;
+        collisionUp = false;
+        canJump = false;
+        canExtendJump = false;
+        detectDistance = 0f;
     }
     void FixedUpdate()
     {
         collisionDownEnter = collisionDown;
-        collisionDown = GetCollision(Vector3.down * (m_boxCollider.size.y / 2f),
-            new Vector2(m_boxCollider.size.x * 0.9f, m_boxCollider.size.x * 0.5f), layer);
-        
+        collisionDown = CollisionUtilities.GetCollision(this.gameObject,
+            Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.55f, 0.1f), layer);
         collisionDownEnter = collisionDown != collisionDownEnter;
+
+        if (collisionDown) collisionDownTimer = coyoteTime;
+        collisionDownTimer -= Time.fixedDeltaTime;
+
+        collisionUpEnter = collisionUp;
+        collisionUp = CollisionUtilities.GetCollision(this.gameObject,
+            Vector3.up * (m_boxCollider.size.y / 2f), new Vector2(0.5f, 0.1f), layer);
+        collisionUpEnter = collisionUp != collisionUpEnter;
+
+        collisionUpLeft = CollisionUtilities.GetCollision(this.gameObject,
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f) + Vector3.left * 0.24f, new Vector2(0.1f, 0.3f), layer);
+        collisionUpRight = CollisionUtilities.GetCollision(this.gameObject,
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f) + Vector3.right * 0.24f, new Vector2(0.1f, 0.3f), layer);
+        collisionUpMiddle = CollisionUtilities.GetCollision(this.gameObject,
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f), new Vector2(0.4f, 0.3f), layer);
+
+        collisionLeftStep = CollisionUtilities.GetCollisionDistance(this.gameObject,
+            Vector2.left * (m_boxCollider.size.x / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f);
+        collisionRightStep = CollisionUtilities.GetCollisionDistance(this.gameObject,
+            Vector2.right * (m_boxCollider.size.x  / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f);
     }
 
-    public void Move(float move, bool jump)
+    public void Move(float move, float speed, bool jump, bool extendJump)
     {
-        Vector3 targetVelocity = new Vector2(move * 10f, m_Rigidbody.velocity.y);
-        m_Rigidbody.velocity = Vector3.SmoothDamp(m_Rigidbody.velocity, targetVelocity, ref m_Velocity, movementSmoothing);
+        Vector3 targetVelocity = new Vector2(move * speed, m_Rigidbody.velocity.y);
+        m_Rigidbody.velocity = Vector3.SmoothDamp(m_Rigidbody.velocity, targetVelocity, ref m_Velocity, movementSmoothing * Time.deltaTime);
 
-        if (collisionDown && jump && Mathf.Abs(m_Rigidbody.velocity.y) < 0.1f)
+        if (collisionDownTimer > 0f && jump && canJump)
         {
-            m_Rigidbody.AddForce(new Vector2(0f, jumpForce), ForceMode2D.Impulse);
+            jumpStartHeight = transform.position.y;
+            canExtendJump = true;
+            canJump = false;
+            stillHoldingJump = true;
+        }
+        if (!jump) stillHoldingJump = false;
+        if (collisionDown && !stillHoldingJump)
+        {
+            canJump = true;
         }
 
-        if (jump && m_Rigidbody.velocity.y >= 0)
+        if (collisionUpLeft && !collisionUpMiddle && !collisionDown && m_Rigidbody.velocity.y > 0)
         {
-            m_Rigidbody.gravityScale = gravity * gravityMultiplier;
+            m_Rigidbody.position += Vector2.right * 0.1f;
+        }
+        else if (collisionUpRight && !collisionUpMiddle && !collisionDown && m_Rigidbody.velocity.y > 0)
+        {
+            m_Rigidbody.position += Vector2.left * 0.1f;
+        }
+        else if (collisionUpEnter)
+        {
+            canExtendJump = false;
+            canJump = false;
+            m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, 0);
+        }
+
+        detectDistance = Mathf.Abs(m_Rigidbody.velocity.x) / speed;
+        if (collisionLeftStep < 0.5f && m_Rigidbody.velocity.x < 0 && collisionDown)
+        {
+            m_Rigidbody.position += Vector2.up * (collisionLeftStep + 0.1f);
+        }
+        else if (collisionRightStep < 0.5f && m_Rigidbody.velocity.x > 0 && collisionDown)
+        {
+            m_Rigidbody.position += Vector2.up * (collisionRightStep + 0.1f);
+        }
+
+        if (extendJump && canExtendJump && transform.position.y - jumpStartHeight < jumpHeight)
+        {
+            m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, jumpUpSpeed);
         }
         else
         {
-            m_Rigidbody.gravityScale = gravity;
-        }
-    }
-
-    private bool GetCollision(Vector3 positionOffset, Vector2 overlapBoxDims, LayerMask layer) //Add layer input
-    {
-        Collider2D[] colliders = Physics2D.OverlapBoxAll(transform.position + positionOffset, overlapBoxDims, 0);
-
-        Debug.DrawLine(
-            transform.position + positionOffset + new Vector3(-overlapBoxDims.x * 0.5f, overlapBoxDims.y * 0.5f, 0),
-            transform.position + positionOffset + new Vector3(overlapBoxDims.x * 0.5f, overlapBoxDims.y * 0.5f, 0),
-            Color.red);
-        Debug.DrawLine(
-            transform.position + positionOffset + new Vector3(-overlapBoxDims.x * 0.5f, -overlapBoxDims.y * 0.5f, 0),
-            transform.position + positionOffset + new Vector3(overlapBoxDims.x * 0.5f, -overlapBoxDims.y * 0.5f, 0),
-            Color.red);
-
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            if (colliders[i].gameObject != gameObject)
+            canExtendJump = false;
+            m_Rigidbody.velocity -= new Vector2(0, jumpPeakSmooth * Time.deltaTime);
+            if (m_Rigidbody.velocity.y < -jumpDownSpeed)
             {
-                return true;
+                m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, -jumpDownSpeed);
             }
         }
-        return false;
     }
 }
