@@ -7,7 +7,8 @@ public class CollisionUtilities : MonoBehaviour
     public static bool GetCollision(GameObject go, Vector3 positionOffset, Vector2 overlapBoxDims, LayerMask layer, bool debug = false)
     {
         Collider2D[] colliders = Physics2D.OverlapBoxAll(go.transform.position + positionOffset, overlapBoxDims, 0, layer);
-
+        if (debug) DebugDrawBox(go, positionOffset, overlapBoxDims);
+        
         for (int i = 0; i < colliders.Length; i++)
         {
             if (colliders[i].gameObject != go &&
@@ -16,7 +17,6 @@ public class CollisionUtilities : MonoBehaviour
                 return true;
             }
         }
-        if (debug) DebugDrawBox(go, positionOffset, overlapBoxDims);
         return false;
     }
 

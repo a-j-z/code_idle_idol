@@ -4,9 +4,10 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    private PlayerController controller;
-
+    public PlayerInputManager inputManager;
     public float speed = 40f;
+
+    private PlayerController controller;
 
     private float horizontalMove = 0f;
     private bool jump = false;
@@ -24,13 +25,13 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         horizontalMove = Input.GetAxisRaw("Horizontal");
-        if (Input.GetButtonDown("Jump"))
+        if (inputManager.GetInput("jump", "down"))
         {
             m_jumpTimer = jumpBuffer;
         }
         m_jumpTimer -= Time.deltaTime;
         jump = m_jumpTimer > 0;
-        extendJump = Input.GetButton("Jump");
+        extendJump = inputManager.GetInput("jump");
 
     }
 
