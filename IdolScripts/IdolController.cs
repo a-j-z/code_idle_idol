@@ -7,6 +7,7 @@ public class IdolController : MonoBehaviour
     public float pickupSmooth = 3f;
     public float throwPeakSmooth = 70f;
     public float carryHeight = 1.2f;
+    public float carryWidth = 0.6f;
     public float throwHeight = 3f;
     public float throwPower = 2f;
     public float riseSpeed = 10f;
@@ -23,8 +24,8 @@ public class IdolController : MonoBehaviour
     private bool collisionUpEnter;
     private bool collisionLeft;
     private bool collisionRight;
-    private bool collisionCarryPlayer;
-    private bool collisionCarry;
+    private float collisionCarryPlayer;
+    private float collisionCarry;
     private bool collisionTeleport;
     private bool canExtendThrow;
 
@@ -45,6 +46,7 @@ public class IdolController : MonoBehaviour
         isThrown = false;
         canExtendThrow = false;
         canTeleport = true;
+        collisionCarry = 0f;
     }
 
     void FixedUpdate()
@@ -65,11 +67,11 @@ public class IdolController : MonoBehaviour
         collisionRight = CollisionUtilities.GetCollision(this.gameObject,
             Vector3.right * (m_boxCollider.size.x / 2f) + Vector3.down * 0.05f, new Vector2(0.1f, 0.5f), layer);
 
-        collisionCarry = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (carryHeight + 0.3f), new Vector2(0.2f, 0.5f), layer);
+        collisionCarryPlayer = CollisionUtilities.GetCollisionDistance(player.gameObject,
+            Vector2.zero, Vector2.up, carryHeight + 0.6f, layer, true);
 
-        collisionCarryPlayer = CollisionUtilities.GetCollision(player.gameObject,
-            Vector3.up * carryHeight, new Vector2(0.2f, 0.5f), layer);
+        collisionCarry = CollisionUtilities.GetCollisionDistance(player.gameObject,
+            new Vector2(m_Rigidbody.position.x - player.GetComponent<Rigidbody2D>().position.x, 0f), Vector2.up, carryHeight + 0.6f, layer, true);
 
         collisionTeleport = CollisionUtilities.GetCollision(this.gameObject,
             Vector3.up * 0.35f + Vector3.left * 0.225f, new Vector2(0.15f, 1.1f), layer) &&
@@ -104,7 +106,6 @@ public class IdolController : MonoBehaviour
 
         if (teleport && canTeleport && !isCarried)
         {
-            Debug.Log("hello");
             if (!collisionTeleport)
             {
                 player.GetComponent<Rigidbody2D>().position = m_Rigidbody.position + Vector2.up * 0.3f;
@@ -128,8 +129,9 @@ public class IdolController : MonoBehaviour
         }
 
         if (interact && canCarry &&
-            Mathf.Abs(player.GetComponent<Rigidbody2D>().position.x - m_Rigidbody.position.x) <= 1f &&
-            Mathf.Abs(player.GetComponent<Rigidbody2D>().position.y - m_Rigidbody.position.y) <= 1.5f)
+            ((Mathf.Abs(player.GetComponent<Rigidbody2D>().position.x - m_Rigidbody.position.x) <= 1f &&
+            Mathf.Abs(player.GetComponent<Rigidbody2D>().position.y - m_Rigidbody.position.y) <= 1.5f) ||
+            isCarried))
         {
             Carry();
         }
@@ -141,12 +143,13 @@ public class IdolController : MonoBehaviour
         {
             canCarry = true;
         }
+
         if (isCarried)
         {
             m_Rigidbody.velocity = Vector2.zero;
             bool canMoveX = true;
             bool canMoveY = true;
-            if (player.GetComponent<Rigidbody2D>().position.x > m_Rigidbody.position.x && collisionRight)
+            if (player.GetComponent<Rigidbody2D>().position.x + carryWidth > m_Rigidbody.position.x && collisionRight)
             {
                 canMoveX = false;
                 if (player.GetComponent<Rigidbody2D>().position.x - m_Rigidbody.position.x > 1f)
@@ -154,7 +157,7 @@ public class IdolController : MonoBehaviour
                     Drop();
                 }
             }
-            else if (player.GetComponent<Rigidbody2D>().position.x < m_Rigidbody.position.x && collisionLeft)
+            else if (player.GetComponent<Rigidbody2D>().position.x - carryWidth < m_Rigidbody.position.x && collisionLeft)
             {
                 canMoveX = false;
                 if (player.GetComponent<Rigidbody2D>().position.x - m_Rigidbody.position.x < -1f)
@@ -162,13 +165,18 @@ public class IdolController : MonoBehaviour
                     Drop();
                 }
             }
-            if (player.GetComponent<Rigidbody2D>().position.y + carryHeight > m_Rigidbody.position.y && collisionUp)
+            if (player.GetComponent<Rigidbody2D>().position.y + collisionCarryPlayer - 0.6f> m_Rigidbody.position.y && collisionUp)
             {
                 canMoveY = false;
             }
-            Vector2 destination = new Vector2(
-                canMoveX ? player.GetComponent<Rigidbody2D>().position.x : m_Rigidbody.position.x,
-                canMoveY ? player.GetComponent<Rigidbody2D>().position.y + carryHeight : m_Rigidbody.position.y);
+            Vector2 destination;
+            int direction = player.GetFacingRight() ? -1 : 1;
+            float jumping = 1.0f - ((collisionCarryPlayer - 0.6f) / 1.2f);
+            float height = Mathf.Min(collisionCarryPlayer, collisionCarry);
+
+            destination = new Vector2(
+                canMoveX ? player.GetComponent<Rigidbody2D>().position.x + (carryWidth * direction * jumping): m_Rigidbody.position.x,
+                canMoveY ? player.GetComponent<Rigidbody2D>().position.y + height - 0.6f: m_Rigidbody.position.y);
             m_Rigidbody.position = Vector2.SmoothDamp(m_Rigidbody.position, destination, ref m_Velocity, pickupSmooth * Time.deltaTime);
         }
     }
@@ -182,31 +190,8 @@ public class IdolController : MonoBehaviour
             isThrown = true;
             canExtendThrow = true;
         }
-        if (teleporting)
-        {
-            if (!(!isCarried && collisionCarry))
-            {
-                isCarried = !isCarried;
-                canCarry = false;
-            }
-            else
-            {
-                //SHOW PLAYER THAT THEY CAN'T PICK UP IDOL HERE
-            }
-        }
-        else
-        {
-            if (!(!isCarried && (collisionCarryPlayer || collisionCarry)))
-            {
-                isCarried = !isCarried;
-                canCarry = false;
-            }
-            else
-            {
-                //SHOW PLAYER THAT THEY CAN'T PICK UP IDOL HERE
-            }
-        }
-        
+        isCarried = !isCarried;
+        canCarry = false;
     }
 
     private void Drop()

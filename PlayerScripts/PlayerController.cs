@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     private bool canJump;
     private bool canExtendJump;
     private bool stillHoldingJump;
+    private bool facingRight;
 
     private bool collisionDown;
     private bool collisionDownEnter;
@@ -43,6 +44,7 @@ public class PlayerController : MonoBehaviour
         canJump = false;
         canExtendJump = false;
         detectDistance = 0f;
+        facingRight = true;
     }
     void FixedUpdate()
     {
@@ -67,15 +69,24 @@ public class PlayerController : MonoBehaviour
             Vector3.up * (m_boxCollider.size.y / 2f + 0.1f), new Vector2(0.4f, 0.3f), layer);
 
         collisionLeftStep = CollisionUtilities.GetCollisionDistance(this.gameObject,
-            Vector2.left * (m_boxCollider.size.x / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f);
+            Vector2.left * (m_boxCollider.size.x / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer, true);
         collisionRightStep = CollisionUtilities.GetCollisionDistance(this.gameObject,
-            Vector2.right * (m_boxCollider.size.x  / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f);
+            Vector2.right * (m_boxCollider.size.x  / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer, true);
     }
 
     public void Move(float move, float speed, bool jump, bool extendJump)
     {
         Vector3 targetVelocity = new Vector2(move * speed, m_Rigidbody.velocity.y);
         m_Rigidbody.velocity = Vector3.SmoothDamp(m_Rigidbody.velocity, targetVelocity, ref m_Velocity, movementSmoothing * Time.deltaTime);
+
+        if (move > 0)
+        {
+            facingRight = true;
+        }
+        else if (move < 0)
+        {
+            facingRight = false;
+        }
 
         if (collisionDownTimer > 0f && jump && canJump)
         {
@@ -106,13 +117,13 @@ public class PlayerController : MonoBehaviour
         }
 
         detectDistance = Mathf.Abs(m_Rigidbody.velocity.x) / speed;
-        if (collisionLeftStep < 0.5f && m_Rigidbody.velocity.x < 0 && collisionDown)
+        if (collisionLeftStep > 0.1f && collisionLeftStep < 0.6f && m_Rigidbody.velocity.x < 0 && collisionDown)
         {
-            m_Rigidbody.position += Vector2.up * (collisionLeftStep + 0.1f);
+            m_Rigidbody.position += Vector2.up * ((0.6f - collisionLeftStep) + 0.1f);
         }
-        else if (collisionRightStep < 0.5f && m_Rigidbody.velocity.x > 0 && collisionDown)
+        else if (collisionRightStep > 0.1f && collisionRightStep < 0.6f && m_Rigidbody.velocity.x > 0 && collisionDown)
         {
-            m_Rigidbody.position += Vector2.up * (collisionRightStep + 0.1f);
+            m_Rigidbody.position += Vector2.up * ((0.6f - collisionRightStep) + 0.1f);
         }
 
         if (extendJump && canExtendJump && transform.position.y - jumpStartHeight < jumpHeight)
@@ -128,5 +139,10 @@ public class PlayerController : MonoBehaviour
                 m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, -jumpDownSpeed);
             }
         }
+    }
+
+    public bool GetFacingRight()
+    {
+        return facingRight;
     }
 }

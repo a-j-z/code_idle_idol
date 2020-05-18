@@ -20,16 +20,23 @@ public class CollisionUtilities : MonoBehaviour
         return false;
     }
 
-    public static float GetCollisionDistance(GameObject go, Vector2 origin, Vector2 direction, float distance)
+    public static float GetCollisionDistance(GameObject go, Vector2 origin, Vector2 direction, float distance, LayerMask layer, bool debug = false)
     {
         Vector2 vec2pos = (Vector2)go.transform.position;
-        RaycastHit2D hit = Physics2D.Raycast(vec2pos + origin, direction, distance);
+        RaycastHit2D hit = Physics2D.Raycast(vec2pos + origin, direction, distance, layer);
+        if (debug) Debug.DrawLine(vec2pos + origin, vec2pos + origin + (direction * distance), Color.red);
 
+        float output;
         if (hit.collider != null)
         {
-            return distance - Vector2.Distance(hit.point, vec2pos + origin);
+            output = Vector2.Distance(hit.point, vec2pos + origin);
         }
-        return distance;
+        else
+        {
+            output = distance;
+        }
+        if (debug) Debug.DrawLine(vec2pos + origin, vec2pos + origin + (direction * (output)), Color.green);
+        return output;
     }
 
     public static void DebugDrawBox(GameObject go, Vector3 positionOffset, Vector2 overlapBoxDims)
