@@ -11,11 +11,14 @@ public class PlayerController : MonoBehaviour
     public float coyoteTime = 0.1f;
     [SerializeField] private LayerMask layer = new LayerMask();
 
+    private SpriteRenderer m_Sprite;
+
     private float jumpStartHeight;
     private bool canJump;
     private bool canExtendJump;
     private bool stillHoldingJump;
     private bool facingRight;
+    private bool teleporting;
 
     private bool collisionDown;
     private bool collisionDownEnter;
@@ -37,6 +40,7 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        m_Sprite = GetComponent<SpriteRenderer>();
         m_Rigidbody = GetComponent<Rigidbody2D>();
         m_boxCollider = GetComponent<BoxCollider2D>();
         collisionDown = false;
@@ -69,15 +73,15 @@ public class PlayerController : MonoBehaviour
             Vector3.up * (m_boxCollider.size.y / 2f + 0.1f), new Vector2(0.4f, 0.3f), layer);
 
         collisionLeftStep = CollisionUtilities.GetCollisionDistance(this.gameObject,
-            Vector2.left * (m_boxCollider.size.x / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer, true);
+            Vector2.left * (m_boxCollider.size.x / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer);
         collisionRightStep = CollisionUtilities.GetCollisionDistance(this.gameObject,
-            Vector2.right * (m_boxCollider.size.x  / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer, true);
+            Vector2.right * (m_boxCollider.size.x  / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer);
     }
 
     public void Move(float move, float speed, bool jump, bool extendJump)
     {
         Vector3 targetVelocity = new Vector2(move * speed, m_Rigidbody.velocity.y);
-        m_Rigidbody.velocity = Vector3.SmoothDamp(m_Rigidbody.velocity, targetVelocity, ref m_Velocity, movementSmoothing * Time.deltaTime);
+        m_Rigidbody.velocity = Vector3.SmoothDamp(m_Rigidbody.velocity, targetVelocity, ref m_Velocity, movementSmoothing * Time.fixedDeltaTime);
 
         if (move > 0)
         {
@@ -133,16 +137,31 @@ public class PlayerController : MonoBehaviour
         else
         {
             canExtendJump = false;
-            m_Rigidbody.velocity -= new Vector2(0, jumpPeakSmooth * Time.deltaTime);
+            m_Rigidbody.velocity -= new Vector2(0, jumpPeakSmooth * Time.fixedDeltaTime);
             if (m_Rigidbody.velocity.y < -jumpDownSpeed)
             {
                 m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, -jumpDownSpeed);
             }
+        }
+
+        if (teleporting)
+        {
+            m_Sprite.enabled = false;
+            m_Rigidbody.velocity = Vector2.zero;
+        }
+        else
+        {
+            m_Sprite.enabled = true;
         }
     }
 
     public bool GetFacingRight()
     {
         return facingRight;
+    }
+
+    public void SetTeleporting(bool teleporting)
+    {
+        this.teleporting = teleporting;
     }
 }

@@ -21,6 +21,7 @@ public class PaletteDrag : MonoBehaviour
     private string m_Name;
     private RectTransform moveLayerPreview;
     private LevelDraw draw;
+    private int nButtons;
 
     public void SetValues(string name, RectTransform moveLayerPreview, LevelDraw draw)
     {
@@ -31,6 +32,7 @@ public class PaletteDrag : MonoBehaviour
         m_Name = name;
         this.moveLayerPreview = moveLayerPreview;
         this.draw = draw;
+        nButtons = LevelParse.GetTileTypes().Length;
     }
 
     void Update()
@@ -46,9 +48,17 @@ public class PaletteDrag : MonoBehaviour
         {
             posChange = (Vector2)Input.mousePosition - startDragMouse;
             parentRt.position = startDragButton + posChange;
-            if (parentRt.position.y < contentRt.position.y - 80.0f * 3 - 5.0f)
+            if (parentRt.position.x < contentRt.position.x + contentRt.rect.width / 2f - 10f)
             {
-                parentRt.position = new Vector2(parentRt.position.x, contentRt.position.y - 80.0f * 3 - 5.0f);
+                parentRt.position = new Vector2(contentRt.position.x + contentRt.rect.width / 2f - 10f, parentRt.position.y);
+            }
+            else if (parentRt.position.x > contentRt.position.x + contentRt.rect.width / 2f + 10f)
+            {
+                parentRt.position = new Vector2(contentRt.position.x + contentRt.rect.width / 2f + 10f, parentRt.position.y);
+            }
+            if (parentRt.position.y < contentRt.position.y - 80.0f * nButtons - 5.0f)
+            {
+                parentRt.position = new Vector2(parentRt.position.x, contentRt.position.y - 80.0f * nButtons - 5.0f);
             }
 
             moveLayerPreview.position = new Vector3(

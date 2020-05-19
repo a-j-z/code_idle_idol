@@ -12,10 +12,14 @@ public class IdolController : MonoBehaviour
     public float throwPower = 2f;
     public float riseSpeed = 10f;
     public float fallSpeed = 15f;
+    public float dropRadius = 1.5f;
+    public float teleportDuration = 0.5f;
+    public float teleportRechargeDuration = 0.5f;
     public PlayerController player;
     [SerializeField] private LayerMask layer = new LayerMask();
 
     private Rigidbody2D m_Rigidbody;
+    private Rigidbody2D playerRigidbody;
     private BoxCollider2D m_boxCollider;
 
     private bool collisionDown;
@@ -36,10 +40,16 @@ public class IdolController : MonoBehaviour
     private Vector2 m_Velocity = Vector2.zero;
 
     private bool canTeleport;
+    private float teleportTimer;
+    private bool teleportBuffer;
+    private float teleportRechargeTimer;
+    private Vector2 velocityBuffer;
+    private Vector2 playerVelocityBuffer;
 
     void Start()
     {
         m_Rigidbody = GetComponent<Rigidbody2D>();
+        playerRigidbody = player.GetComponent<Rigidbody2D>();
         m_boxCollider = GetComponent<BoxCollider2D>();
         canCarry = true;
         isCarried = false;
@@ -47,13 +57,16 @@ public class IdolController : MonoBehaviour
         canExtendThrow = false;
         canTeleport = true;
         collisionCarry = 0f;
+        teleportTimer = 0f;
+        teleportBuffer = false;
     }
 
     void FixedUpdate()
     {
         collisionDownEnter = collisionDown;
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.25f, 0.1f), layer);
+            Vector3.down * (m_boxCollider.size.y / 2f), 
+            new Vector2(0.25f, 0.1f + Mathf.Abs(m_Rigidbody.velocity.y) * Time.fixedDeltaTime * 2f), layer);
         collisionDownEnter = collisionDown != collisionDownEnter;
 
         collisionUpEnter = collisionUp;
@@ -68,15 +81,23 @@ public class IdolController : MonoBehaviour
             Vector3.right * (m_boxCollider.size.x / 2f) + Vector3.down * 0.05f, new Vector2(0.1f, 0.5f), layer);
 
         collisionCarryPlayer = CollisionUtilities.GetCollisionDistance(player.gameObject,
-            Vector2.zero, Vector2.up, carryHeight + 0.6f, layer, true);
+            Vector2.zero, Vector2.up, carryHeight + 0.6f, layer);
 
         collisionCarry = CollisionUtilities.GetCollisionDistance(player.gameObject,
-            new Vector2(m_Rigidbody.position.x - player.GetComponent<Rigidbody2D>().position.x, 0f), Vector2.up, carryHeight + 0.6f, layer, true);
+            new Vector2(m_Rigidbody.position.x - playerRigidbody.position.x, 0f),
+            Vector2.up, carryHeight + 0.6f, layer);
 
         collisionTeleport = CollisionUtilities.GetCollision(this.gameObject,
             Vector3.up * 0.35f + Vector3.left * 0.225f, new Vector2(0.15f, 1.1f), layer) &&
             CollisionUtilities.GetCollision(this.gameObject,
             Vector3.up * 0.35f + Vector3.right * 0.225f, new Vector2(0.15f, 1.1f), layer);
+
+        float n; if (teleportRechargeTimer < 0) n = 0; else n = teleportRechargeTimer;
+        CollisionUtilities.GetCollision(this.gameObject,
+            Vector3.right * 0.5f, new Vector2(0.1f, n * 3f), layer, true);
+
+        teleportTimer -= Time.fixedDeltaTime;
+        teleportRechargeTimer -= Time.fixedDeltaTime;
     }
 
     public void Move(bool interact, bool extendInteract, bool interactSecondary, bool teleport)
@@ -97,25 +118,42 @@ public class IdolController : MonoBehaviour
         else
         {
             isThrown = false;
-            m_Rigidbody.velocity -= new Vector2(0, throwPeakSmooth * Time.deltaTime);
+            m_Rigidbody.velocity -= new Vector2(0, throwPeakSmooth * Time.fixedDeltaTime);
             if (m_Rigidbody.velocity.y < -fallSpeed)
             {
                 m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, -fallSpeed);
             }
         }
 
-        if (teleport && canTeleport && !isCarried)
+        if (teleport && canTeleport && !isCarried && teleportRechargeTimer < 0)
         {
             if (!collisionTeleport)
             {
-                player.GetComponent<Rigidbody2D>().position = m_Rigidbody.position + Vector2.up * 0.3f;
+                velocityBuffer = m_Rigidbody.velocity;
+                playerVelocityBuffer = playerRigidbody.velocity;
+                teleportTimer = teleportDuration;
+                teleportBuffer = true;
                 canTeleport = false;
-                Carry(true);
+                player.SetTeleporting(true);
             }
             else
             {
                 //SHOW PLAYER THAT THEY CAN'T TELEPORT HERE
             }
+        }
+        if (teleportTimer >= 0 && teleportTimer != teleportDuration)
+        {
+            playerRigidbody.position = m_Rigidbody.position + Vector2.up * 0.3f;
+            m_Rigidbody.velocity = Vector2.zero;
+        }
+        if (teleportBuffer && teleportTimer < 0)
+        {
+            player.SetTeleporting(false);
+            playerRigidbody.velocity = playerVelocityBuffer;
+            m_Rigidbody.velocity = velocityBuffer;
+            teleportBuffer = false;
+            teleportRechargeTimer = teleportRechargeDuration;
+            Carry(true);
         }
         if (!teleport)
         {
@@ -128,9 +166,9 @@ public class IdolController : MonoBehaviour
             m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, 0f);
         }
 
-        if (interact && canCarry &&
-            ((Mathf.Abs(player.GetComponent<Rigidbody2D>().position.x - m_Rigidbody.position.x) <= 1f &&
-            Mathf.Abs(player.GetComponent<Rigidbody2D>().position.y - m_Rigidbody.position.y) <= 1.5f) ||
+        if (interact && canCarry && teleportTimer < 0 &&
+            ((Mathf.Abs(playerRigidbody.position.x - m_Rigidbody.position.x) <= 1f &&
+            Mathf.Abs(playerRigidbody.position.y - m_Rigidbody.position.y) <= 1.5f) ||
             isCarried))
         {
             Carry();
@@ -149,25 +187,25 @@ public class IdolController : MonoBehaviour
             m_Rigidbody.velocity = Vector2.zero;
             bool canMoveX = true;
             bool canMoveY = true;
-            if (player.GetComponent<Rigidbody2D>().position.x + carryWidth > m_Rigidbody.position.x && collisionRight)
+            if (playerRigidbody.position.x + carryWidth > m_Rigidbody.position.x && collisionRight)
             {
                 canMoveX = false;
-                if (player.GetComponent<Rigidbody2D>().position.x - m_Rigidbody.position.x > 1f)
-                {
-                    Drop();
-                }
+                if (playerRigidbody.position.x - m_Rigidbody.position.x > dropRadius) Drop();
             }
-            else if (player.GetComponent<Rigidbody2D>().position.x - carryWidth < m_Rigidbody.position.x && collisionLeft)
+            else if (playerRigidbody.position.x - carryWidth < m_Rigidbody.position.x && collisionLeft)
             {
                 canMoveX = false;
-                if (player.GetComponent<Rigidbody2D>().position.x - m_Rigidbody.position.x < -1f)
-                {
-                    Drop();
-                }
+                if (playerRigidbody.position.x - m_Rigidbody.position.x < -dropRadius) Drop();
             }
-            if (player.GetComponent<Rigidbody2D>().position.y + collisionCarryPlayer - 0.6f> m_Rigidbody.position.y && collisionUp)
+            if (playerRigidbody.position.y + collisionCarryPlayer - 0.6f > m_Rigidbody.position.y && collisionUp)
             {
                 canMoveY = false;
+                if (playerRigidbody.position.y - m_Rigidbody.position.y > dropRadius) Drop();
+            }
+            else if (playerRigidbody.position.y + collisionCarryPlayer - 0.6f < m_Rigidbody.position.y && collisionDown)
+            {
+                canMoveY = false;
+                if (playerRigidbody.position.y - m_Rigidbody.position.y < -dropRadius) Drop();
             }
             Vector2 destination;
             int direction = player.GetFacingRight() ? -1 : 1;
@@ -175,9 +213,9 @@ public class IdolController : MonoBehaviour
             float height = Mathf.Min(collisionCarryPlayer, collisionCarry);
 
             destination = new Vector2(
-                canMoveX ? player.GetComponent<Rigidbody2D>().position.x + (carryWidth * direction * jumping): m_Rigidbody.position.x,
-                canMoveY ? player.GetComponent<Rigidbody2D>().position.y + height - 0.6f: m_Rigidbody.position.y);
-            m_Rigidbody.position = Vector2.SmoothDamp(m_Rigidbody.position, destination, ref m_Velocity, pickupSmooth * Time.deltaTime);
+                canMoveX ? playerRigidbody.position.x + (carryWidth * direction * jumping): m_Rigidbody.position.x,
+                canMoveY ? playerRigidbody.position.y + height - 0.6f: m_Rigidbody.position.y);
+            m_Rigidbody.position = Vector2.SmoothDamp(m_Rigidbody.position, destination, ref m_Velocity, pickupSmooth * Time.fixedDeltaTime);
         }
     }
 
@@ -185,8 +223,8 @@ public class IdolController : MonoBehaviour
     {
         if (isCarried)
         {
-            m_Rigidbody.velocity = new Vector2(player.GetComponent<Rigidbody2D>().velocity.x * 2f, m_Rigidbody.velocity.y);
-            throwStartHeight = player.GetComponent<Rigidbody2D>().position.y + carryHeight;
+            m_Rigidbody.velocity = new Vector2(playerRigidbody.velocity.x * 2f, m_Rigidbody.velocity.y);
+            throwStartHeight = playerRigidbody.position.y + carryHeight;
             isThrown = true;
             canExtendThrow = true;
         }
@@ -196,7 +234,7 @@ public class IdolController : MonoBehaviour
 
     private void Drop()
     {
-        m_Rigidbody.velocity = new Vector2(player.GetComponent<Rigidbody2D>().velocity.x, m_Rigidbody.velocity.y);
+        m_Rigidbody.velocity = new Vector2(playerRigidbody.velocity.x, m_Rigidbody.velocity.y);
         isCarried = false;
         canCarry = false;
     }
