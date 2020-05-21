@@ -16,6 +16,7 @@ public class IdolController : MonoBehaviour
     public float teleportDuration = 0.5f;
     public float teleportRechargeDuration = 0.5f;
     public PlayerController player;
+    public TeleportRecharge rechargeIndicator;
     [SerializeField] private LayerMask layer = new LayerMask();
 
     private Rigidbody2D m_Rigidbody;
@@ -98,6 +99,7 @@ public class IdolController : MonoBehaviour
 
         teleportTimer -= Time.fixedDeltaTime;
         teleportRechargeTimer -= Time.fixedDeltaTime;
+        rechargeIndicator.SetFill(teleportRechargeTimer / teleportRechargeDuration);
     }
 
     public void Move(bool interact, bool extendInteract, bool interactSecondary, bool teleport)
