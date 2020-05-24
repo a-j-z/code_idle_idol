@@ -32,6 +32,9 @@ public class PaletteTypeText : MonoBehaviour
             case 3:
                 text.text = "Semisolid";
                 break;
+            case 4:
+                text.text = "Idol Filter";
+                break;
             default:
                 text.text = "";
                 break;

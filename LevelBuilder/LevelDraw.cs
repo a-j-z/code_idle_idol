@@ -15,8 +15,9 @@ public enum PaletteType : int
 {
     Collidable = 1,
     Noncollidable = 2,
-    Semisolid = 3
-    //Danger = 4
+    Semisolid = 3,
+    IdolFilter = 4
+    //Danger = 5
 }
 
 public class LevelDraw : MonoBehaviour
@@ -24,6 +25,8 @@ public class LevelDraw : MonoBehaviour
     public Camera cam;
     public PaletteMenuManager paletteMenuManager;
     public BoxCollider2D playerSemisolidCollider;
+    [SerializeField] private LayerMask SafeCollidableLayer = new LayerMask();
+    [SerializeField] private LayerMask IdolFilterLayer = new LayerMask();
 
     private string[] tileTypes;
     private Dictionary<string, float> tileSizes;
@@ -40,6 +43,8 @@ public class LevelDraw : MonoBehaviour
     private Vector3Int currMousePos = Vector3Int.zero;
     private Vector3Int prevMousePos = Vector3Int.zero;
     private GameObject rect;
+
+    
 
     void Start()
     {
@@ -113,7 +118,7 @@ public class LevelDraw : MonoBehaviour
         if (!paletteName.Equals(""))
         {
             paletteTypes[paletteName]++;
-            if (paletteTypes[paletteName] > PaletteType.Semisolid)
+            if (paletteTypes[paletteName] > PaletteType.IdolFilter)
             {
                 paletteTypes[paletteName] = PaletteType.Collidable;
             }
@@ -129,6 +134,9 @@ public class LevelDraw : MonoBehaviour
             colliderComposite = tilemaps[entry.Key].gameObject.GetComponent<CompositeCollider2D>();
             if (entry.Value == PaletteType.Collidable)
             {
+                int[] layers = {8, 9};
+                tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
+                tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(SafeCollidableLayer);
                 collider.enabled = true;
                 effector.surfaceArc = 360f;
             }
@@ -153,6 +161,13 @@ public class LevelDraw : MonoBehaviour
                         break;
                     }
                 }
+            }
+            else if (entry.Value == PaletteType.IdolFilter)
+            {
+                int[] layers = {9};
+                tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
+                tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(IdolFilterLayer);
+                effector.surfaceArc = 360f;
             }
         }
     }
@@ -187,7 +202,7 @@ public class LevelDraw : MonoBehaviour
         tileNames = new List<string>(loadedTiles.Keys);
 
         GameObject tilemap = new GameObject();
-        tilemap.layer = 8;
+        tilemap.layer = LayerUtilities.LayerNumber(SafeCollidableLayer);
         tilemap.AddComponent<Tilemap>();
         tilemap.AddComponent<TilemapRenderer>();
         tilemap.AddComponent<TilemapCollider2D>();

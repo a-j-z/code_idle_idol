@@ -82,7 +82,7 @@ public class IdolController : MonoBehaviour
             Vector3.right * (m_boxCollider.size.x / 2f) + Vector3.down * 0.05f, new Vector2(0.1f, 0.5f), layer);
 
         collisionCarryPlayer = CollisionUtilities.GetCollisionDistance(player.gameObject,
-            Vector2.zero, Vector2.up, carryHeight + 0.6f, layer);
+            Vector2.zero, Vector2.up, carryHeight + 0.6f, player.GetLayer());
 
         collisionCarry = CollisionUtilities.GetCollisionDistance(player.gameObject,
             new Vector2(m_Rigidbody.position.x - playerRigidbody.position.x, 0f),

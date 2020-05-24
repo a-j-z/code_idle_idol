@@ -164,4 +164,9 @@ public class PlayerController : MonoBehaviour
     {
         this.teleporting = teleporting;
     }
+
+    public LayerMask GetLayer()
+    {
+        return layer;
+    }
 }
