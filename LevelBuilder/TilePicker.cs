@@ -63,7 +63,24 @@ public class TilePicker : MonoBehaviour
         return output + "_" + type + "_1";
     }
 
-    public static IList<Vector2[]> GeneratePhysicsShape(float size, Sprite sprite)
+    public static IList<Vector2[]> GeneratePhysicsShape(float size, Sprite sprite, string generationType)
+    {
+        if (generationType.Equals("full"))
+        {
+            return GeneratePhysicsShapeFull(size, sprite);
+        }
+        else if (generationType.Equals("semisolid"))
+        {
+            return GeneratePhysicsShapeSemisolid(size, sprite);
+        }
+        else if (generationType.Equals("outline"))
+        {
+            return GeneratePhysicsShapeOutline(size, sprite);
+        }
+        return null;
+    }
+    
+    private static IList<Vector2[]> GeneratePhysicsShapeFull(float size, Sprite sprite)
     {
         IList<Vector2[]> output = new List<Vector2[]>();
         Vector2 center = sprite.rect.size / 2f;
@@ -152,7 +169,113 @@ public class TilePicker : MonoBehaviour
         return output;
     }
 
-    public static void AngleSort(Vector2[] vertices, Vector2 center)
+    private static IList<Vector2[]> GeneratePhysicsShapeSemisolid(float size, Sprite sprite)
+    {
+        IList<Vector2[]> output = new List<Vector2[]>();
+        Vector2 center = sprite.rect.size / 2f;
+        float radius = center.x * size;
+        string spriteName = sprite.name.Split('_')[0];
+
+        bool left = !spriteName.Contains("a") && spriteName.Contains("d");
+        bool middle = !spriteName.Contains("b");
+        bool right = !spriteName.Contains("c") && spriteName.Contains("e");
+
+        Vector2 pointA = new Vector2(0, center.y + radius);
+        Vector2 pointB = new Vector2(center.x - radius, center.y + radius);
+        Vector2 pointC = new Vector2(center.x + radius, center.y + radius);
+        Vector2 pointD = new Vector2(sprite.rect.size.x, center.y + radius);
+        Vector2 pointE = new Vector2(0, center.y + radius - 1f);
+        Vector2 pointF = new Vector2(center.x - radius, center.y + radius - 1f);
+        Vector2 pointG = new Vector2(center.x + radius, center.y + radius - 1f);
+        Vector2 pointH = new Vector2(sprite.rect.size.x, center.y + radius - 1f);
+
+
+        List<Vector2> vertices = new List<Vector2>();
+        if (left && !middle && !right)
+        {
+            vertices.Add(pointA);
+            vertices.Add(pointB);
+            vertices.Add(pointF);
+            vertices.Add(pointE);
+            output.Add(vertices.ToArray());
+        }
+        else if (left && middle && !right)
+        {
+            vertices.Add(pointA);
+            vertices.Add(pointC);
+            vertices.Add(pointG);
+            vertices.Add(pointE);
+            output.Add(vertices.ToArray());
+        }
+        else if (left && middle && right)
+        {
+            vertices.Add(pointA);
+            vertices.Add(pointD);
+            vertices.Add(pointH);
+            vertices.Add(pointE);
+            output.Add(vertices.ToArray());
+        }
+        else if (!left && middle && right)
+        {
+            vertices.Add(pointB);
+            vertices.Add(pointD);
+            vertices.Add(pointH);
+            vertices.Add(pointF);
+            output.Add(vertices.ToArray());
+        }
+        else if (!left && !middle && right)
+        {
+            vertices.Add(pointC);
+            vertices.Add(pointD);
+            vertices.Add(pointH);
+            vertices.Add(pointG);
+            output.Add(vertices.ToArray());
+        }
+        else if (left && !middle && right)
+        {
+            vertices.Add(pointA);
+            vertices.Add(pointB);
+            vertices.Add(pointF);
+            vertices.Add(pointE);
+            output.Add(vertices.ToArray());
+            vertices.Clear();
+            vertices.Add(pointC);
+            vertices.Add(pointD);
+            vertices.Add(pointH);
+            vertices.Add(pointG);
+            output.Add(vertices.ToArray());
+        }
+        else if (!left && middle && !right)
+        {
+            vertices.Add(pointB);
+            vertices.Add(pointC);
+            vertices.Add(pointG);
+            vertices.Add(pointF);
+            output.Add(vertices.ToArray());
+        }
+        else 
+        {
+            vertices.Add(center);
+            vertices.Add(center);
+            vertices.Add(center);
+            vertices.Add(center);
+            output.Add(vertices.ToArray());
+        }
+
+        Debug.Log(spriteName);
+        for (int i = 0; i < output[0].Length; i++)
+        {
+            Debug.Log(output[0][i]);
+        }
+        return output;
+    }
+
+    private static IList<Vector2[]> GeneratePhysicsShapeOutline(float size, Sprite sprite)
+    {
+        return null;
+    }
+
+    private static void AngleSort(Vector2[] vertices, Vector2 center)
     {
         int n = vertices.Length;
         for (int i = 1; i < n; ++i)
@@ -169,7 +292,7 @@ public class TilePicker : MonoBehaviour
         }
     }
 
-    public static float VectorAngle(Vector2 v, Vector2 center)
+    private static float VectorAngle(Vector2 v, Vector2 center)
     {
         return Vector2.SignedAngle(new Vector2(0, 1), v - center);
     }

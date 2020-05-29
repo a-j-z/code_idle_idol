@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
     public float jumpPeakSmooth = 200f;
     public float coyoteTime = 0.1f;
     [SerializeField] private LayerMask layer = new LayerMask();
+    [SerializeField] private LayerMask collisionUpLayer = new LayerMask();
 
     private SpriteRenderer m_Sprite;
 
@@ -20,6 +21,7 @@ public class PlayerController : MonoBehaviour
     private bool facingRight;
     private bool teleporting;
 
+    private float speedStretch;
     private bool collisionDown;
     private bool collisionDownEnter;
     private float collisionDownTimer;
@@ -52,25 +54,29 @@ public class PlayerController : MonoBehaviour
     }
     void FixedUpdate()
     {
+        speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
+        if (speedStretch > -0.05f) speedStretch = -0.05f;
         collisionDownEnter = collisionDown;
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.55f, 0.1f), layer);
+            Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.55f, -speedStretch * 2), layer, true);
         collisionDownEnter = collisionDown != collisionDownEnter;
 
         if (collisionDown) collisionDownTimer = coyoteTime;
         collisionDownTimer -= Time.fixedDeltaTime;
 
+        speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
+        if (speedStretch < 0.05f) speedStretch = 0.05f;
         collisionUpEnter = collisionUp;
         collisionUp = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (m_boxCollider.size.y / 2f), new Vector2(0.5f, 0.1f), layer);
+            Vector3.up * (m_boxCollider.size.y / 2f), new Vector2(0.5f, speedStretch * 2), collisionUpLayer, true);
         collisionUpEnter = collisionUp != collisionUpEnter;
 
         collisionUpLeft = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f) + Vector3.left * 0.24f, new Vector2(0.1f, 0.3f), layer);
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f) + Vector3.left * 0.24f, new Vector2(0.1f, 0.3f), collisionUpLayer);
         collisionUpRight = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f) + Vector3.right * 0.24f, new Vector2(0.1f, 0.3f), layer);
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f) + Vector3.right * 0.24f, new Vector2(0.1f, 0.3f), collisionUpLayer);
         collisionUpMiddle = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f), new Vector2(0.4f, 0.3f), layer);
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.1f), new Vector2(0.4f, 0.3f), collisionUpLayer);
 
         collisionLeftStep = CollisionUtilities.GetCollisionDistance(this.gameObject,
             Vector2.left * (m_boxCollider.size.x / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer);
@@ -113,7 +119,7 @@ public class PlayerController : MonoBehaviour
         {
             m_Rigidbody.position += Vector2.left * 0.1f;
         }
-        else if (collisionUpEnter)
+        else if (collisionUpEnter && m_Rigidbody.velocity.y > 0)
         {
             canExtendJump = false;
             canJump = false;
@@ -168,5 +174,10 @@ public class PlayerController : MonoBehaviour
     public LayerMask GetLayer()
     {
         return layer;
+    }
+
+    public LayerMask GetCollisionUpLayer()
+    {
+        return collisionUpLayer;
     }
 }

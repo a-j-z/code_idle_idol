@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.Events;
 using System.IO;
 using System;
 
@@ -24,20 +25,22 @@ public class LevelDraw : MonoBehaviour
 {
     public Camera cam;
     public PaletteMenuManager paletteMenuManager;
-    public BoxCollider2D playerSemisolidCollider;
     [SerializeField] private LayerMask SafeCollidableLayer = new LayerMask();
     [SerializeField] private LayerMask IdolFilterLayer = new LayerMask();
+    [SerializeField] private LayerMask SemisolidCollidableLayer = new LayerMask();
 
     private string[] tileTypes;
     private Dictionary<string, float> tileSizes;
     private Dictionary<string, Tilemap> tilemaps;
+    //private Dictionary<string, string> tilemapPhysicsShapes;
     private Dictionary<string, PaletteType> paletteTypes;
     private Dictionary<string, List<Vector3Int>> tiles;
 
     private Tools currentTool;
     private int currentPalette;
 
-    private Dictionary<string, Tile> loadedTiles;
+    private Dictionary<string, Tile> loadedTilesFull;
+    private Dictionary<string, Tile> loadedTilesSemisolid;
     private List<string> tileNames;
 
     private Vector3Int currMousePos = Vector3Int.zero;
@@ -49,7 +52,8 @@ public class LevelDraw : MonoBehaviour
     void Start()
     {
         tileTypes = LevelParse.GetTileTypes();
-        loadedTiles = new Dictionary<string, Tile>();
+        loadedTilesFull = new Dictionary<string, Tile>();
+        loadedTilesSemisolid = new Dictionary<string, Tile>();
         tileSizes = LevelParse.LoadTileSizes();
         tilemaps = new Dictionary<string, Tilemap>();
         paletteTypes = new Dictionary<string, PaletteType>();
@@ -110,7 +114,7 @@ public class LevelDraw : MonoBehaviour
                 DrawTileRect(tileTypes[currentPalette], currMousePos, prevMousePos, draw);
             }
         }
-        UpdatePalettes();
+        //UpdatePalettes();
     }
 
     public void UpdatePalettes(string paletteName = "")
@@ -126,17 +130,16 @@ public class LevelDraw : MonoBehaviour
 
         TilemapCollider2D collider;
         PlatformEffector2D effector;
-        CompositeCollider2D colliderComposite;
         foreach (KeyValuePair<string, PaletteType> entry in paletteTypes)
         {
             collider = tilemaps[entry.Key].gameObject.GetComponent<TilemapCollider2D>();
             effector = tilemaps[entry.Key].gameObject.GetComponent<PlatformEffector2D>();
-            colliderComposite = tilemaps[entry.Key].gameObject.GetComponent<CompositeCollider2D>();
             if (entry.Value == PaletteType.Collidable)
             {
                 int[] layers = {8, 9};
                 tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
                 tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(SafeCollidableLayer);
+                SwitchTilePhysicsShape(entry.Key, "full");
                 collider.enabled = true;
                 effector.surfaceArc = 360f;
             }
@@ -147,26 +150,16 @@ public class LevelDraw : MonoBehaviour
             else if (entry.Value == PaletteType.Semisolid)
             {
                 effector.surfaceArc = 1f;
-
                 collider.enabled = true;
-                Collider2D[] colliders = new Collider2D[tileTypes.Length];
-                ContactFilter2D contactFilter = new ContactFilter2D();
-                contactFilter = contactFilter.NoFilter();
-                int overlapCount = Physics2D.OverlapCollider(playerSemisolidCollider, contactFilter, colliders);
-                for (int i = 0; i < overlapCount; i++)
-                {
-                    if (colliders[i].gameObject.name.Equals(collider.gameObject.name))
-                    {
-                        collider.enabled = false;
-                        break;
-                    }
-                }
+                tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(SemisolidCollidableLayer);
+                SwitchTilePhysicsShape(entry.Key, "semisolid");
             }
             else if (entry.Value == PaletteType.IdolFilter)
             {
                 int[] layers = {9};
                 tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
                 tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(IdolFilterLayer);
+                SwitchTilePhysicsShape(entry.Key, "full");
                 effector.surfaceArc = 360f;
             }
         }
@@ -192,14 +185,20 @@ public class LevelDraw : MonoBehaviour
                 splitFileName = fileArray[j].Split(splitter);
                 fileName = splitFileName[splitFileName.Length - 1].Split('.')[0];
                 tileSprite = Resources.Load<Sprite>("Tiles/" + tileTypes[i] + "/" + fileName);
-                tileSprite.OverridePhysicsShape(TilePicker.GeneratePhysicsShape(tileSizes[tileTypes[i]], tileSprite));
+
+                tileSprite.OverridePhysicsShape(TilePicker.GeneratePhysicsShape(tileSizes[tileTypes[i]], tileSprite, "full"));
                 tile = ScriptableObject.CreateInstance("Tile") as Tile;
-                tile.sprite = tileSprite;
-                loadedTiles.Add(fileName, tile);
+                tile.sprite = Instantiate(tileSprite);
+                loadedTilesFull.Add(fileName, Instantiate(tile));
+                
+                tileSprite.OverridePhysicsShape(TilePicker.GeneratePhysicsShape(tileSizes[tileTypes[i]], tileSprite, "semisolid"));
+                tile = ScriptableObject.CreateInstance("Tile") as Tile;
+                tile.sprite = Instantiate(tileSprite);
+                loadedTilesSemisolid.Add(fileName, Instantiate(tile));
             }
         }
 
-        tileNames = new List<string>(loadedTiles.Keys);
+        tileNames = new List<string>(loadedTilesFull.Keys);
 
         GameObject tilemap = new GameObject();
         tilemap.layer = LayerUtilities.LayerNumber(SafeCollidableLayer);
@@ -223,6 +222,7 @@ public class LevelDraw : MonoBehaviour
             currentMap.name = tileTypes[i];
             currentMap.transform.position = Vector3.forward * i + new Vector3(-0.5f, -0.5f, 0);
             tilemaps.Add(tileTypes[i], currentMap.GetComponent<Tilemap>());
+            //tilemapPhysicsShapes.Add(tileTypes[i], "full");
             paletteTypes.Add(tileTypes[i], PaletteType.Collidable);
             tiles.Add(tileTypes[i], new List<Vector3Int>());
         }
@@ -283,7 +283,7 @@ public class LevelDraw : MonoBehaviour
         if (!tiles[id].Contains(location))
         {
             tiles[id].Add(location);
-            tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], location, id, tileNames)]);
+            tilemaps[id].SetTile(location, loadedTilesFull[TilePicker.GetTile(tiles[id], location, id, tileNames)]);
             UpdateSurroundingTiles(location, id);
         }
     }
@@ -295,6 +295,40 @@ public class LevelDraw : MonoBehaviour
             tiles[id].Remove(location);
             tilemaps[id].SetTile(location, null);
             UpdateSurroundingTiles(location, id);
+        }
+    }
+
+    private void SwitchTilePhysicsShape(string id, string generationType)
+    {
+        //generationType = [full, semisolid, outline]
+        BoundsInt bounds = tilemaps[id].cellBounds;
+        
+        Dictionary<string, Tile> currentTiles;
+        if (generationType.Equals("full"))
+        {
+            currentTiles = loadedTilesFull;
+        }
+        else if (generationType.Equals("semisolid"))
+        {
+            currentTiles = loadedTilesSemisolid;
+        }
+        else return;
+        Debug.Log(id + " " + generationType + " " + currentTiles.Count + " " + bounds);
+        
+        for (int x = bounds.xMin; x <= bounds.xMax; x++)
+        {
+            for (int y = bounds.yMin; y <= bounds.yMax; y++)
+            {
+                Tile tile = (Tile)tilemaps[id].GetTile(new Vector3Int(x, y, 0));
+                if (tile != null)
+                {
+                    string name = tile.sprite.name.Substring(0, tile.sprite.name.Length - 7);
+                    Debug.Log(name);
+                    Debug.Log(name + ": replaced " + tile.sprite.GetPhysicsShapePointCount(0) + " with " + currentTiles[name].sprite.GetPhysicsShapePointCount(0));
+                    tilemaps[id].SetTile(new Vector3Int(x, y, 0), currentTiles[name]);
+                    tilemaps[id].RefreshTile(new Vector3Int(x, y, 0));
+                }
+            }
         }
     }
 
@@ -396,7 +430,7 @@ public class LevelDraw : MonoBehaviour
                     && !(x == 0 && y == 0))
                 {
                     tilemaps[id].SetTile(location + new Vector3Int(x, y, 0),
-                        loadedTiles[TilePicker.GetTile(tiles[id], location + new Vector3Int(x, y, 0), id, tileNames)]);
+                        loadedTilesFull[TilePicker.GetTile(tiles[id], location + new Vector3Int(x, y, 0), id, tileNames)]);
                 }
             }
         }
@@ -409,7 +443,7 @@ public class LevelDraw : MonoBehaviour
             tilemaps[entry.Key].ClearAllTiles();
             foreach (Vector3Int location in entry.Value)
             {
-                tilemaps[entry.Key].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[entry.Key], location, entry.Key, tileNames)]);
+                tilemaps[entry.Key].SetTile(location, loadedTilesFull[TilePicker.GetTile(tiles[entry.Key], location, entry.Key, tileNames)]);
             }
         }
     }
@@ -475,7 +509,6 @@ public class LevelDraw : MonoBehaviour
             tiles = LevelParse.ParseFile(path);
             CastIntToPaletteType(LevelParse.ParsePaletteInfo(path, ">"));
             SetPaletteLayerOrder(LevelParse.ParsePaletteInfo(path, "!"));
-
         }
         catch (NullReferenceException)
         {
@@ -483,6 +516,7 @@ public class LevelDraw : MonoBehaviour
             return;
         }
         DrawTiles();
+        UpdatePalettes();
     }
 
     public void Save()
