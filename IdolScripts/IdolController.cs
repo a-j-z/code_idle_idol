@@ -19,11 +19,15 @@ public class IdolController : MonoBehaviour
     public TeleportRecharge rechargeIndicator;
     [SerializeField] private LayerMask layer = new LayerMask();
     [SerializeField] private LayerMask collisionUpLayer = new LayerMask();
+    [SerializeField] private LayerMask idolLayer = new LayerMask();
+    [SerializeField] private LayerMask carriedIdolLayer = new LayerMask();
+    private LayerMask collisionDownLayer;
 
     private Rigidbody2D m_Rigidbody;
     private Rigidbody2D playerRigidbody;
     private BoxCollider2D m_boxCollider;
 
+    private float speedStretch;
     private bool collisionDown;
     private bool collisionDownEnter;
     private bool collisionUp;
@@ -65,15 +69,30 @@ public class IdolController : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (isCarried)
+        {
+            collisionDownLayer = collisionUpLayer;
+            gameObject.layer = LayerUtilities.LayerNumber(carriedIdolLayer);
+        }
+        else
+        {
+            collisionDownLayer = layer;
+            gameObject.layer = LayerUtilities.LayerNumber(idolLayer);
+        }
+
+        speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
+        if (speedStretch > -0.05f) speedStretch = -0.05f;
         collisionDownEnter = collisionDown;
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
             Vector3.down * (m_boxCollider.size.y / 2f), 
-            new Vector2(0.25f, 0.1f + Mathf.Abs(m_Rigidbody.velocity.y) * Time.fixedDeltaTime * 2f), layer);
+            new Vector2(0.25f, (-speedStretch + 0.05f) * 2f), collisionDownLayer, true);
         collisionDownEnter = collisionDown != collisionDownEnter;
 
+        speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
+        if (speedStretch < 0.05f) speedStretch = 0.05f;
         collisionUpEnter = collisionUp;
         collisionUp = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (m_boxCollider.size.y / 2f + 0.05f), new Vector2(0.25f, 0.2f), collisionUpLayer);
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.05f), new Vector2(0.25f, (speedStretch + 0.05f) * 2f), collisionUpLayer);
         collisionUpEnter = collisionUp != collisionUpEnter;
 
         collisionLeft = CollisionUtilities.GetCollision(this.gameObject,
@@ -105,20 +124,26 @@ public class IdolController : MonoBehaviour
 
     public void Move(bool interact, bool extendInteract, bool interactSecondary, bool teleport)
     {
-        if (collisionDownEnter)
+        //if (collisionDownEnter && m_Rigidbody.velocity.y <= 0)
+        //{
+        //    m_Rigidbody.velocity = new Vector2(0, m_Rigidbody.velocity.y);
+        //}
+        Debug.Log(m_Rigidbody.velocity.y);
+        if (collisionDown && m_Rigidbody.velocity.y <= 0.1f && !isCarried)
         {
+            //m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, 0f);
             m_Rigidbody.velocity = new Vector2(0, m_Rigidbody.velocity.y);
-        }
-
-        if (collisionDown)
-        {
-            m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, 0f);
+            m_Rigidbody.velocity -= new Vector2(0, throwPeakSmooth * Time.fixedDeltaTime);
+            if (m_Rigidbody.velocity.y < -fallSpeed)
+            {
+                m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, -fallSpeed);
+            }
         }
         else if (isThrown && m_Rigidbody.position.y - throwStartHeight < throwHeight && canExtendThrow)
         {
             m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, riseSpeed);
         }
-        else
+        else if (!isCarried)
         {
             isThrown = false;
             m_Rigidbody.velocity -= new Vector2(0, throwPeakSmooth * Time.fixedDeltaTime);

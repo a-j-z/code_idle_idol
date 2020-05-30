@@ -262,11 +262,6 @@ public class TilePicker : MonoBehaviour
             output.Add(vertices.ToArray());
         }
 
-        Debug.Log(spriteName);
-        for (int i = 0; i < output[0].Length; i++)
-        {
-            Debug.Log(output[0][i]);
-        }
         return output;
     }
 

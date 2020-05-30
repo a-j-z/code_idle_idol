@@ -32,7 +32,6 @@ public class LevelDraw : MonoBehaviour
     private string[] tileTypes;
     private Dictionary<string, float> tileSizes;
     private Dictionary<string, Tilemap> tilemaps;
-    //private Dictionary<string, string> tilemapPhysicsShapes;
     private Dictionary<string, PaletteType> paletteTypes;
     private Dictionary<string, List<Vector3Int>> tiles;
 
@@ -136,7 +135,7 @@ public class LevelDraw : MonoBehaviour
             effector = tilemaps[entry.Key].gameObject.GetComponent<PlatformEffector2D>();
             if (entry.Value == PaletteType.Collidable)
             {
-                int[] layers = {8, 9};
+                int[] layers = {8, 9, 14};
                 tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
                 tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(SafeCollidableLayer);
                 SwitchTilePhysicsShape(entry.Key, "full");
@@ -149,6 +148,8 @@ public class LevelDraw : MonoBehaviour
             }
             else if (entry.Value == PaletteType.Semisolid)
             {
+                int[] layers = {8, 9};
+                tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
                 effector.surfaceArc = 1f;
                 collider.enabled = true;
                 tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(SemisolidCollidableLayer);
@@ -156,7 +157,7 @@ public class LevelDraw : MonoBehaviour
             }
             else if (entry.Value == PaletteType.IdolFilter)
             {
-                int[] layers = {9};
+                int[] layers = {9, 14};
                 tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
                 tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(IdolFilterLayer);
                 SwitchTilePhysicsShape(entry.Key, "full");
@@ -313,7 +314,6 @@ public class LevelDraw : MonoBehaviour
             currentTiles = loadedTilesSemisolid;
         }
         else return;
-        Debug.Log(id + " " + generationType + " " + currentTiles.Count + " " + bounds);
         
         for (int x = bounds.xMin; x <= bounds.xMax; x++)
         {
@@ -323,8 +323,6 @@ public class LevelDraw : MonoBehaviour
                 if (tile != null)
                 {
                     string name = tile.sprite.name.Substring(0, tile.sprite.name.Length - 7);
-                    Debug.Log(name);
-                    Debug.Log(name + ": replaced " + tile.sprite.GetPhysicsShapePointCount(0) + " with " + currentTiles[name].sprite.GetPhysicsShapePointCount(0));
                     tilemaps[id].SetTile(new Vector3Int(x, y, 0), currentTiles[name]);
                     tilemaps[id].RefreshTile(new Vector3Int(x, y, 0));
                 }
