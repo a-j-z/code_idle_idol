@@ -119,7 +119,7 @@ public class PlayerController : MonoBehaviour
         {
             m_Rigidbody.position += Vector2.left * 0.1f;
         }
-        else if (collisionUpEnter && m_Rigidbody.velocity.y > 0)
+        else if (collisionUpEnter && (m_Rigidbody.velocity.y > 0 || !collisionDown))
         {
             canExtendJump = false;
             canJump = false;

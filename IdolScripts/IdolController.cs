@@ -27,7 +27,8 @@ public class IdolController : MonoBehaviour
     private Rigidbody2D playerRigidbody;
     private BoxCollider2D m_boxCollider;
 
-    private float speedStretch;
+    private float speedStretchX;
+    private float speedStretchY;
     private bool collisionDown;
     private bool collisionDownEnter;
     private bool collisionUp;
@@ -80,19 +81,20 @@ public class IdolController : MonoBehaviour
             gameObject.layer = LayerUtilities.LayerNumber(idolLayer);
         }
 
-        speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
-        if (speedStretch > -0.05f) speedStretch = -0.05f;
+        speedStretchX = m_Rigidbody.velocity.x * Time.fixedDeltaTime;
+        speedStretchY = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
+        if (speedStretchY > -0.05f) speedStretchY = -0.05f;
         collisionDownEnter = collisionDown;
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.down * (m_boxCollider.size.y / 2f), 
-            new Vector2(0.25f, (-speedStretch + 0.05f) * 2f), collisionDownLayer, true);
+            Vector3.down * (m_boxCollider.size.y / 2f + (-speedStretchY) / 2f) + Vector3.right * speedStretchX, 
+            new Vector2(0.35f, -speedStretchY + 0.05f), collisionDownLayer, true);
         collisionDownEnter = collisionDown != collisionDownEnter;
 
-        speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
-        if (speedStretch < 0.05f) speedStretch = 0.05f;
+        speedStretchY = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
+        if (speedStretchY < 0.05f) speedStretchY = 0.05f;
         collisionUpEnter = collisionUp;
         collisionUp = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (m_boxCollider.size.y / 2f + 0.05f), new Vector2(0.25f, (speedStretch + 0.05f) * 2f), collisionUpLayer);
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.05f), new Vector2(0.25f, (speedStretchY + 0.05f) * 2f), collisionUpLayer);
         collisionUpEnter = collisionUp != collisionUpEnter;
 
         collisionLeft = CollisionUtilities.GetCollision(this.gameObject,
