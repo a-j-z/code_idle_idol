@@ -40,6 +40,7 @@ public class LevelDraw : MonoBehaviour
 
     private Dictionary<string, Tile> loadedTilesFull;
     private Dictionary<string, Tile> loadedTilesSemisolid;
+    private Dictionary<string, int> tileVariations;
     private List<string> tileNames;
 
     private Vector3Int currMousePos = Vector3Int.zero;
@@ -53,6 +54,7 @@ public class LevelDraw : MonoBehaviour
         tileTypes = LevelParse.GetTileTypes();
         loadedTilesFull = new Dictionary<string, Tile>();
         loadedTilesSemisolid = new Dictionary<string, Tile>();
+        tileVariations = LevelParse.GetTileVariations();
         tileSizes = LevelParse.LoadTileSizes();
         tilemaps = new Dictionary<string, Tilemap>();
         paletteTypes = new Dictionary<string, PaletteType>();
@@ -113,7 +115,6 @@ public class LevelDraw : MonoBehaviour
                 DrawTileRect(tileTypes[currentPalette], currMousePos, prevMousePos, draw);
             }
         }
-        //UpdatePalettes();
     }
 
     public void UpdatePalettes(string paletteName = "")
@@ -281,10 +282,13 @@ public class LevelDraw : MonoBehaviour
 
     private void PlaceTile(string id, Vector3Int location)
     {
+        Dictionary<string, Tile> loadedTiles;
+        if (paletteTypes[id] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
+        else loadedTiles = loadedTilesFull;
         if (!tiles[id].Contains(location))
         {
             tiles[id].Add(location);
-            tilemaps[id].SetTile(location, loadedTilesFull[TilePicker.GetTile(tiles[id], location, id, tileNames)]);
+            tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, location, id, tileNames)]);
             UpdateSurroundingTiles(location, id);
         }
     }
@@ -420,6 +424,9 @@ public class LevelDraw : MonoBehaviour
 
     private void UpdateSurroundingTiles(Vector3Int location, string id)
     {
+        Dictionary<string, Tile> loadedTiles;
+        if (paletteTypes[id] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
+        else loadedTiles = loadedTilesFull;
         for (int x = -1; x <= 1; x++)
         {
             for (int y = -1; y <= 1; y++)
@@ -428,7 +435,7 @@ public class LevelDraw : MonoBehaviour
                     && !(x == 0 && y == 0))
                 {
                     tilemaps[id].SetTile(location + new Vector3Int(x, y, 0),
-                        loadedTilesFull[TilePicker.GetTile(tiles[id], location + new Vector3Int(x, y, 0), id, tileNames)]);
+                        loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, location + new Vector3Int(x, y, 0), id, tileNames)]);
                 }
             }
         }
@@ -436,12 +443,15 @@ public class LevelDraw : MonoBehaviour
 
     private void DrawTiles()
     {
+        Dictionary<string, Tile> loadedTiles;
         foreach (KeyValuePair<string, List<Vector3Int>> entry in tiles)
         {
+            if (paletteTypes[entry.Key] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
+            else loadedTiles = loadedTilesFull;
             tilemaps[entry.Key].ClearAllTiles();
             foreach (Vector3Int location in entry.Value)
             {
-                tilemaps[entry.Key].SetTile(location, loadedTilesFull[TilePicker.GetTile(tiles[entry.Key], location, entry.Key, tileNames)]);
+                tilemaps[entry.Key].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[entry.Key], tileVariations, location, entry.Key, tileNames)]);
             }
         }
     }

@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class TilePicker : MonoBehaviour
 {
-    public static string GetTile(List<Vector3Int> tiles, Vector3Int location, string type, List<string> tileNames)
+    public static string GetTile(List<Vector3Int> tiles, Dictionary<string, int> tileVariations, Vector3Int location, string type, List<string> tileNames)
     {
         string output = "";
 
@@ -55,12 +55,14 @@ public class TilePicker : MonoBehaviour
              tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)))
         { output += "h"; }
 
-        if (!tileNames.Contains(output + "_" + type + "_1"))
+        int random = Random.Range(1, tileVariations[output + "_" + type] + 1);
+
+        if (!tileNames.Contains(output + "_" + type + "_" + random))
         {
             return "_" + type + "_1";
         }
 
-        return output + "_" + type + "_1";
+        return output + "_" + type + "_" + random;
     }
 
     public static IList<Vector2[]> GeneratePhysicsShape(float size, Sprite sprite, string generationType)

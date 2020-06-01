@@ -126,14 +126,8 @@ public class IdolController : MonoBehaviour
 
     public void Move(bool interact, bool extendInteract, bool interactSecondary, bool teleport)
     {
-        //if (collisionDownEnter && m_Rigidbody.velocity.y <= 0)
-        //{
-        //    m_Rigidbody.velocity = new Vector2(0, m_Rigidbody.velocity.y);
-        //}
-        Debug.Log(m_Rigidbody.velocity.y);
         if (collisionDown && m_Rigidbody.velocity.y <= 0.1f && !isCarried)
         {
-            //m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, 0f);
             m_Rigidbody.velocity = new Vector2(0, m_Rigidbody.velocity.y);
             m_Rigidbody.velocity -= new Vector2(0, throwPeakSmooth * Time.fixedDeltaTime);
             if (m_Rigidbody.velocity.y < -fallSpeed)

@@ -244,4 +244,41 @@ public class LevelParse : MonoBehaviour
 
         return output;
     }
+
+    public static Dictionary<string, int> GetTileVariations()
+    {
+        Dictionary<string, int> output = new Dictionary<string, int>();
+
+        string[] tileTypes = GetTileTypes();
+        string[] splitFileName;
+        string fileName;
+        char[] splitter = { '/', '\\' };
+        
+        for (int i = 0; i < tileTypes.Length; i++)
+        {
+            string[] fileArray = Directory.GetFiles(Application.dataPath + "/Resources/Tiles/" + tileTypes[i], "*.png", SearchOption.AllDirectories);
+            for (int j = 0; j < fileArray.Length; j++)
+            {
+                splitFileName = fileArray[j].Split(splitter);
+                fileName = splitFileName[splitFileName.Length - 1];
+                splitFileName = fileName.Split('_');
+                fileName = splitFileName[0];
+                for (int word = 1; word < splitFileName.Length-1; word++)
+                {
+                    fileName += "_" + splitFileName[word];
+                }
+                Debug.Log(fileName);
+                if (output.ContainsKey(fileName))
+                {
+                    output[fileName]++;
+                }
+                else
+                {
+                    output.Add(fileName, 1);
+                }
+            }
+        }
+
+        return output;
+    }
 }
