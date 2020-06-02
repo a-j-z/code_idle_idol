@@ -31,6 +31,7 @@ public class LevelDraw : MonoBehaviour
 
     private string[] tileTypes;
     private Dictionary<string, float> tileSizes;
+    private Dictionary<string, float> tileUpdateRadiuses;
     private Dictionary<string, Tilemap> tilemaps;
     private Dictionary<string, PaletteType> paletteTypes;
     private Dictionary<string, List<Vector3Int>> tiles;
@@ -47,15 +48,14 @@ public class LevelDraw : MonoBehaviour
     private Vector3Int prevMousePos = Vector3Int.zero;
     private GameObject rect;
 
-    
-
     void Start()
     {
         tileTypes = LevelParse.GetTileTypes();
         loadedTilesFull = new Dictionary<string, Tile>();
         loadedTilesSemisolid = new Dictionary<string, Tile>();
         tileVariations = LevelParse.GetTileVariations();
-        tileSizes = LevelParse.LoadTileSizes();
+        tileSizes = LevelParse.LoadTileData("sizes");
+        tileUpdateRadiuses = LevelParse.LoadTileData("update_radiuses");
         tilemaps = new Dictionary<string, Tilemap>();
         paletteTypes = new Dictionary<string, PaletteType>();
         tiles = new Dictionary<string, List<Vector3Int>>();
@@ -288,7 +288,7 @@ public class LevelDraw : MonoBehaviour
         if (!tiles[id].Contains(location))
         {
             tiles[id].Add(location);
-            tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, location, id, tileNames)]);
+            tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, tileUpdateRadiuses, location, id, tileNames)]);
             UpdateSurroundingTiles(location, id);
         }
     }
@@ -427,15 +427,16 @@ public class LevelDraw : MonoBehaviour
         Dictionary<string, Tile> loadedTiles;
         if (paletteTypes[id] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
         else loadedTiles = loadedTilesFull;
-        for (int x = -1; x <= 1; x++)
+        int updateRadius = Mathf.FloorToInt(tileUpdateRadiuses[id]);
+        for (int x = -updateRadius; x <= updateRadius; x++)
         {
-            for (int y = -1; y <= 1; y++)
+            for (int y = -updateRadius; y <= updateRadius; y++)
             {
                 if (tilemaps[id].GetTile<Tile>(location + new Vector3Int(x, y, 0)) != null
                     && !(x == 0 && y == 0))
                 {
                     tilemaps[id].SetTile(location + new Vector3Int(x, y, 0),
-                        loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, location + new Vector3Int(x, y, 0), id, tileNames)]);
+                        loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, tileUpdateRadiuses, location + new Vector3Int(x, y, 0), id, tileNames)]);
                 }
             }
         }
@@ -451,7 +452,7 @@ public class LevelDraw : MonoBehaviour
             tilemaps[entry.Key].ClearAllTiles();
             foreach (Vector3Int location in entry.Value)
             {
-                tilemaps[entry.Key].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[entry.Key], tileVariations, location, entry.Key, tileNames)]);
+                tilemaps[entry.Key].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[entry.Key], tileVariations, tileUpdateRadiuses, location, entry.Key, tileNames)]);
             }
         }
     }

@@ -192,14 +192,14 @@ public class LevelParse : MonoBehaviour
         return tileTypes;
     }
 
-    public static Dictionary<string, float> LoadTileSizes()
+    public static Dictionary<string, float> LoadTileData(string filename)
     {
         Dictionary<string, float> output = new Dictionary<string, float>();
 
         StreamReader reader;
         try
         {
-            reader = new StreamReader(Application.dataPath + "/Resources/Tiles/sizes.txt", Encoding.Default);
+            reader = new StreamReader(Application.dataPath + "/Resources/Tiles/" + filename + ".txt", Encoding.Default);
         }
         catch (Exception)
         {

@@ -5,7 +5,9 @@ using UnityEngine;
 
 public class TilePicker : MonoBehaviour
 {
-    public static string GetTile(List<Vector3Int> tiles, Dictionary<string, int> tileVariations, Vector3Int location, string type, List<string> tileNames)
+    public static string GetTile(
+        List<Vector3Int> tiles, Dictionary<string, int> tileVariations, Dictionary<string, float> tileUpdateRadiuses,
+        Vector3Int location, string type, List<string> tileNames, float extremesBias = 1.5f, float noise = 0.2f)
     {
         string output = "";
 
@@ -56,6 +58,15 @@ public class TilePicker : MonoBehaviour
         { output += "h"; }
 
         int random = Random.Range(1, tileVariations[output + "_" + type] + 1);
+        if (output.Equals("abcdefgh"))
+        {
+            float edgeScore = EdgeScore(tiles, location, Mathf.FloorToInt(tileUpdateRadiuses[type]));
+            edgeScore += Random.Range(-noise, noise) - ((extremesBias - 1) / 2f);
+            edgeScore *= extremesBias;
+            random = Mathf.RoundToInt(tileVariations[output + "_" + type] * edgeScore);
+            if (random < 1) random = 1;
+            else if (random > tileVariations[output + "_" + type]) random = tileVariations[output + "_" + type];
+        }
 
         if (!tileNames.Contains(output + "_" + type + "_" + random))
         {
@@ -292,5 +303,28 @@ public class TilePicker : MonoBehaviour
     private static float VectorAngle(Vector2 v, Vector2 center)
     {
         return Vector2.SignedAngle(new Vector2(0, 1), v - center);
+    }
+
+    private static float EdgeScore(List<Vector3Int> tiles, Vector3Int location, int radius)
+    {
+        int total = 0;
+        int tileCount = 0;
+        if (radius == 1) return 1;
+        for (int x = -radius; x <= radius; x++)
+        {
+            for (int y = -radius; y <= radius; y++)
+            {
+                if (Mathf.Abs(x) > 1 || Mathf.Abs(y) > 1)
+                {
+                    total++;
+                    if (tiles.Contains(location + new Vector3Int(x, y, 0)))
+                    {
+                        tileCount++;
+                    }
+                }
+            }
+        }
+        Debug.Log(tileCount + " / " + total);
+        return (float)tileCount / (float)total;
     }
 }
