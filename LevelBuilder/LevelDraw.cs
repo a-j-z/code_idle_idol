@@ -23,7 +23,10 @@ public enum PaletteType : int
 
 public class LevelDraw : MonoBehaviour
 {
-    public Camera cam;
+    private int WORLDBOUNDS = 10000;
+
+    public Camera buildCam;
+    public Camera playCam;
     public PaletteMenuManager paletteMenuManager;
     [SerializeField] private LayerMask SafeCollidableLayer = new LayerMask();
     [SerializeField] private LayerMask IdolFilterLayer = new LayerMask();
@@ -47,6 +50,7 @@ public class LevelDraw : MonoBehaviour
     private Vector3Int currMousePos = Vector3Int.zero;
     private Vector3Int prevMousePos = Vector3Int.zero;
     private GameObject rect;
+    private GameObject camBoundsRect;
 
     void Start()
     {
@@ -61,11 +65,15 @@ public class LevelDraw : MonoBehaviour
         tiles = new Dictionary<string, List<Vector3Int>>();
         currentTool = Tools.Draw;
         currentPalette = 0;
-        rect = new GameObject("rect");
+        rect = new GameObject("Rect");
         rect.AddComponent<RectDraw>();
         rect.transform.parent = transform;
+        camBoundsRect = new GameObject("CamBoundsRect");
+        camBoundsRect.AddComponent<RectDraw>();
+        camBoundsRect.transform.parent = transform;
 
         LoadTiles();
+        //New();
     }
 
     void Update()
@@ -75,12 +83,12 @@ public class LevelDraw : MonoBehaviour
         {
             if (currentTool == Tools.Draw)
             {
-                currMousePos = MouseUtilities.GridSpace(cam);
+                currMousePos = MouseUtilities.GridSpace(buildCam);
                 prevMousePos = currMousePos;
             }
             else if (currentTool == Tools.Rect)
             {
-                prevMousePos = MouseUtilities.GridSpace(cam);
+                prevMousePos = MouseUtilities.GridSpace(buildCam);
             }
         }
         if ((Input.GetMouseButton(0) || Input.GetMouseButton(1)) && !PlayManager.GetIsPlay()
@@ -90,13 +98,13 @@ public class LevelDraw : MonoBehaviour
             draw = Input.GetMouseButton(0);
             if (currentTool == Tools.Draw)
             {
-                currMousePos = MouseUtilities.GridSpace(cam);
+                currMousePos = MouseUtilities.GridSpace(buildCam);
                 DrawTileLine(tileTypes[currentPalette], currMousePos, prevMousePos, draw);
-                prevMousePos = MouseUtilities.GridSpace(cam);
+                prevMousePos = MouseUtilities.GridSpace(buildCam);
             }
             else if (currentTool == Tools.Rect)
             {
-                currMousePos = MouseUtilities.GridSpace(cam);
+                currMousePos = MouseUtilities.GridSpace(buildCam);
                 rect.SetActive(true);
                 rect.GetComponent<RectDraw>().Draw(currMousePos, prevMousePos);
             }
@@ -115,6 +123,8 @@ public class LevelDraw : MonoBehaviour
                 DrawTileRect(tileTypes[currentPalette], currMousePos, prevMousePos, draw);
             }
         }
+        if (PlayManager.GetIsPlay()) { camBoundsRect.SetActive(false); }
+        else { camBoundsRect.SetActive(true); }
     }
 
     public void UpdatePalettes(string paletteName = "")
@@ -291,6 +301,7 @@ public class LevelDraw : MonoBehaviour
             tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, tileUpdateRadiuses, location, id, tileNames)]);
             UpdateSurroundingTiles(location, id);
         }
+        playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
     }
 
     private void RemoveTile(string id, Vector3Int location)
@@ -301,6 +312,43 @@ public class LevelDraw : MonoBehaviour
             tilemaps[id].SetTile(location, null);
             UpdateSurroundingTiles(location, id);
         }
+        playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
+    }
+
+    private BoundsInt CalculateBounds()
+    {
+        int xMin = WORLDBOUNDS, yMin = WORLDBOUNDS, xMax = -WORLDBOUNDS, yMax = -WORLDBOUNDS;
+        foreach(KeyValuePair<string, Tilemap> entry in tilemaps)
+        {
+            BoundsInt currBounds = entry.Value.cellBounds;
+            if (currBounds.xMax - currBounds.xMin > 0 || currBounds.yMax - currBounds.yMin > 0) 
+            {
+                if (currBounds.xMin < xMin) xMin = currBounds.xMin;
+                if (currBounds.yMin < yMin) yMin = currBounds.yMin;
+                if (currBounds.xMax > xMax) xMax = currBounds.xMax;
+                if (currBounds.yMax > yMax) yMax = currBounds.yMax;
+            }
+        }
+
+        int i = 0;
+        while (xMax - xMin < 32)
+        {
+            if (i % 2 == 0) xMax++;
+            else xMin--;
+            i++; 
+        }
+        i = 0;
+        while (yMax - yMin < 16)
+        {
+            if (i % 2 == 0) yMax++;
+            else yMin--;
+            i++; 
+        }
+
+        camBoundsRect.GetComponent<RectDraw>().Draw(
+            new Vector3(xMin + 0.5f, yMin + 0.5f, 0),
+            new Vector3(xMax - 1.5f, yMax - 1.5f, 0));
+        return new BoundsInt(xMin, yMin, 0, xMax - xMin, yMax - yMin, 0);
     }
 
     private void SwitchTilePhysicsShape(string id, string generationType)
@@ -504,6 +552,7 @@ public class LevelDraw : MonoBehaviour
             tiles[entry.Key].Clear();
         }
         DrawTiles();
+        playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
     }
 
     public void Load()
@@ -526,6 +575,7 @@ public class LevelDraw : MonoBehaviour
         }
         DrawTiles();
         UpdatePalettes();
+        playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
     }
 
     public void Save()

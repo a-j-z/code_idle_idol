@@ -7,7 +7,7 @@ public class TilePicker : MonoBehaviour
 {
     public static string GetTile(
         List<Vector3Int> tiles, Dictionary<string, int> tileVariations, Dictionary<string, float> tileUpdateRadiuses,
-        Vector3Int location, string type, List<string> tileNames, float extremesBias = 1.5f, float noise = 0.2f)
+        Vector3Int location, string type, List<string> tileNames, float extremesBias = 1.25f, float noise = 0.3f, float shift = 0.2f)
     {
         string output = "";
 
@@ -58,10 +58,10 @@ public class TilePicker : MonoBehaviour
         { output += "h"; }
 
         int random = Random.Range(1, tileVariations[output + "_" + type] + 1);
-        if (output.Equals("abcdefgh"))
+        if (output.Equals("abcdefgh") && tileUpdateRadiuses[type] > 1.0f)
         {
-            float edgeScore = EdgeScore(tiles, location, Mathf.FloorToInt(tileUpdateRadiuses[type]));
-            edgeScore += Random.Range(-noise, noise) - ((extremesBias - 1) / 2f);
+            float edgeScore = EdgeScore2(tiles, location, Mathf.FloorToInt(tileUpdateRadiuses[type]));
+            edgeScore += Random.Range(-noise, noise) - ((extremesBias - 1) / 2f) + shift;
             edgeScore *= extremesBias;
             random = Mathf.RoundToInt(tileVariations[output + "_" + type] * edgeScore);
             if (random < 1) random = 1;
@@ -307,8 +307,7 @@ public class TilePicker : MonoBehaviour
 
     private static float EdgeScore(List<Vector3Int> tiles, Vector3Int location, int radius)
     {
-        int total = 0;
-        int tileCount = 0;
+        int closest = radius + 1;
         if (radius == 1) return 1;
         for (int x = -radius; x <= radius; x++)
         {
@@ -316,15 +315,32 @@ public class TilePicker : MonoBehaviour
             {
                 if (Mathf.Abs(x) > 1 || Mathf.Abs(y) > 1)
                 {
-                    total++;
-                    if (tiles.Contains(location + new Vector3Int(x, y, 0)))
+                    if (!tiles.Contains(location + new Vector3Int(x, y, 0)))
                     {
-                        tileCount++;
+                        int absX = Mathf.Abs(x); int absY = Mathf.Abs(y);
+                        if (closest > absX) closest = absX; if (closest > absY) closest = absY;
                     }
                 }
             }
         }
-        Debug.Log(tileCount + " / " + total);
-        return (float)tileCount / (float)total;
+        Debug.Log("closest: " + closest + ", radius - 1: " + (radius - 1));
+        Debug.Log(((float)(closest - (radius - 1))) / ((float)(radius - 1)));
+        return ((float)(closest - (radius - 1))) / ((float)(radius - 1));
+    }
+
+    private static float EdgeScore2(List<Vector3Int> tiles, Vector3Int location, int radius)
+    {
+        int closest = radius + 1;
+        if (radius <= 1) return 1;
+        for (int r = 2; r <= radius; r++)
+        {
+            if (!tiles.Contains(location + new Vector3Int(r, 0, 0))) {closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(-r, 0, 0))) {closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(0, r, 0))) {closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(0, -r, 0))) {closest = r; break; }
+        }
+        Debug.Log("closest: " + closest + ", radius - 1: " + (radius - 1));
+        Debug.Log(((float)(closest - (radius - 1))) / ((float)(radius - 1)));
+        return ((float)(closest - (radius - 1))) / ((float)(radius - 1));
     }
 }

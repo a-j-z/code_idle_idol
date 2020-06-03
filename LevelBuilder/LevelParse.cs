@@ -267,7 +267,6 @@ public class LevelParse : MonoBehaviour
                 {
                     fileName += "_" + splitFileName[word];
                 }
-                Debug.Log(fileName);
                 if (output.ContainsKey(fileName))
                 {
                     output[fileName]++;
