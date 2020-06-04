@@ -6,14 +6,16 @@ public class RectDraw : MonoBehaviour
 {
     private GameObject[] fillArea = new GameObject[4];
     private LineRenderer[] lines = new LineRenderer[4];
+    private bool isSetup = false;
 
     void Start()
     {
-        SetupRectDraw();
+        if (!isSetup) SetupRectDraw();
     }
 
     private void SetupRectDraw()
     {
+        isSetup = true;
         for (int i = 0; i < 4; i++)
         {
             fillArea[i] = new GameObject("Line" + (i + 1));
@@ -33,6 +35,8 @@ public class RectDraw : MonoBehaviour
 
     public void Draw(Vector3 start, Vector3 end)
     {
+        if (!isSetup) SetupRectDraw();
+
         float isStartXMax = start.x > end.x ? 1 : -1;
         float isStartYMax = start.y > end.y ? 1 : -1;
         float bit = lines[0].startWidth / 2f;

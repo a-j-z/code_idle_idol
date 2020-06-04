@@ -73,7 +73,7 @@ public class LevelDraw : MonoBehaviour
         camBoundsRect.transform.parent = transform;
 
         LoadTiles();
-        //New();
+        New();
     }
 
     void Update()
@@ -292,26 +292,23 @@ public class LevelDraw : MonoBehaviour
 
     private void PlaceTile(string id, Vector3Int location)
     {
+        if (tiles[id].Contains(location)) return;
         Dictionary<string, Tile> loadedTiles;
         if (paletteTypes[id] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
         else loadedTiles = loadedTilesFull;
-        if (!tiles[id].Contains(location))
-        {
-            tiles[id].Add(location);
-            tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, tileUpdateRadiuses, location, id, tileNames)]);
-            UpdateSurroundingTiles(location, id);
-        }
+        tiles[id].Add(location);
+        tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, tileUpdateRadiuses, location, id, tileNames)]);
+        UpdateSurroundingTiles(location, id);
         playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
     }
 
     private void RemoveTile(string id, Vector3Int location)
     {
-        if (tiles[id].Contains(location))
-        {
-            tiles[id].Remove(location);
-            tilemaps[id].SetTile(location, null);
-            UpdateSurroundingTiles(location, id);
-        }
+        if (!tiles[id].Contains(location)) return;
+        tiles[id].Remove(location);
+        tilemaps[id].SetTile(location, null);
+        UpdateSurroundingTiles(location, id);
+        tilemaps[id].CompressBounds();
         playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
     }
 
@@ -321,7 +318,8 @@ public class LevelDraw : MonoBehaviour
         foreach(KeyValuePair<string, Tilemap> entry in tilemaps)
         {
             BoundsInt currBounds = entry.Value.cellBounds;
-            if (currBounds.xMax - currBounds.xMin > 0 || currBounds.yMax - currBounds.yMin > 0) 
+            Debug.Log(currBounds);
+            if (!currBounds.size.Equals(new Vector3Int(0, 0, 1))) 
             {
                 if (currBounds.xMin < xMin) xMin = currBounds.xMin;
                 if (currBounds.yMin < yMin) yMin = currBounds.yMin;
