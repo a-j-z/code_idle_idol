@@ -23,8 +23,6 @@ public enum PaletteType : int
 
 public class LevelDraw : MonoBehaviour
 {
-    private int WORLDBOUNDS = 10000;
-
     public Camera buildCam;
     public Camera playCam;
     public PaletteMenuManager paletteMenuManager;
@@ -314,7 +312,7 @@ public class LevelDraw : MonoBehaviour
 
     private BoundsInt CalculateBounds()
     {
-        int xMin = WORLDBOUNDS, yMin = WORLDBOUNDS, xMax = -WORLDBOUNDS, yMax = -WORLDBOUNDS;
+        int xMin = 0, yMin = 0, xMax = 0, yMax = 0;
         foreach(KeyValuePair<string, Tilemap> entry in tilemaps)
         {
             BoundsInt currBounds = entry.Value.cellBounds;
@@ -501,6 +499,28 @@ public class LevelDraw : MonoBehaviour
                 tilemaps[entry.Key].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[entry.Key], tileVariations, tileUpdateRadiuses, location, entry.Key, tileNames)]);
             }
         }
+    }
+
+    public Vector3 GetSpawn(Vector3 direction)
+    {
+        Vector3 output = Vector3.zero;
+        if (direction.Equals(Vector3.up))
+        {
+            output = Vector3.up;
+        }
+        else if (direction.Equals(Vector3.down))
+        {
+            output = Vector3.down;
+        }
+        else if (direction.Equals(Vector3.left))
+        {
+            output = Vector3.left;
+        }
+        else if (direction.Equals(Vector3.right))
+        {
+            output = Vector3.right;
+        }
+        return output;
     }
 
     private Dictionary<string, int> CastPaletteTypesToInt()
