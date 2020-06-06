@@ -316,7 +316,6 @@ public class LevelDraw : MonoBehaviour
         foreach(KeyValuePair<string, Tilemap> entry in tilemaps)
         {
             BoundsInt currBounds = entry.Value.cellBounds;
-            Debug.Log(currBounds);
             if (!currBounds.size.Equals(new Vector3Int(0, 0, 1))) 
             {
                 if (currBounds.xMin < xMin) xMin = currBounds.xMin;
@@ -344,7 +343,70 @@ public class LevelDraw : MonoBehaviour
         camBoundsRect.GetComponent<RectDraw>().Draw(
             new Vector3(xMin + 0.5f, yMin + 0.5f, 0),
             new Vector3(xMax - 1.5f, yMax - 1.5f, 0));
-        return new BoundsInt(xMin, yMin, 0, xMax - xMin, yMax - yMin, 0);
+
+        BoundsInt output = new BoundsInt(xMin, yMin, 0, xMax - xMin, yMax - yMin, 0);
+        Vector3[] spawns = { Vector3.up, Vector3.down, Vector3.left, Vector3.right };
+        for (int spawn = 0; spawn < spawns.Length; spawn++) GetSpawn(spawns[spawn], output);
+
+        return output;
+    }
+
+    private Vector3 GetSpawn(Vector3 direction, BoundsInt bounds)
+    {
+        Vector3 output = Vector3.zero;
+        if (direction.Equals(Vector3.up))
+        {
+            output = new Vector3Int(bounds.xMin, bounds.yMax, 0);
+            for (int i = bounds.xMin; i <= bounds.xMax; i++)
+            {
+                bool isTileHere = false;
+                foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
+                {
+                    if (paletteTypes[entry.Key] == PaletteType.Collidable &&
+                        entry.Value.GetTile(new Vector3Int(i, bounds.yMax, 0)))
+                    {
+                        isTileHere = true; 
+                        break;
+                    }
+                }
+                if (!isTileHere) 
+                {
+                    output = new Vector3Int(i, bounds.yMax, 0);
+                    break;
+                }
+            }
+        }
+        else if (direction.Equals(Vector3.down))
+        {
+            output = new Vector3Int(bounds.xMin, bounds.yMin, 0);
+            for (int i = bounds.xMin; i <= bounds.xMax; i++)
+            {
+                bool isTileHere = false;
+                foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
+                {
+                    if (paletteTypes[entry.Key] == PaletteType.Collidable &&
+                        entry.Value.GetTile(new Vector3Int(i, bounds.yMin, 0)))
+                    {
+                        isTileHere = true; 
+                        break;
+                    }
+                }
+                if (!isTileHere)
+                {
+                    output = new Vector3Int(i, bounds.yMin, 0);
+                    break;
+                }
+            }
+        }
+        else if (direction.Equals(Vector3.left))
+        {
+            output = Vector3.left;
+        }
+        else if (direction.Equals(Vector3.right))
+        {
+            output = Vector3.right;
+        }
+        return output;
     }
 
     private void SwitchTilePhysicsShape(string id, string generationType)
@@ -499,28 +561,6 @@ public class LevelDraw : MonoBehaviour
                 tilemaps[entry.Key].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[entry.Key], tileVariations, tileUpdateRadiuses, location, entry.Key, tileNames)]);
             }
         }
-    }
-
-    public Vector3 GetSpawn(Vector3 direction)
-    {
-        Vector3 output = Vector3.zero;
-        if (direction.Equals(Vector3.up))
-        {
-            output = Vector3.up;
-        }
-        else if (direction.Equals(Vector3.down))
-        {
-            output = Vector3.down;
-        }
-        else if (direction.Equals(Vector3.left))
-        {
-            output = Vector3.left;
-        }
-        else if (direction.Equals(Vector3.right))
-        {
-            output = Vector3.right;
-        }
-        return output;
     }
 
     private Dictionary<string, int> CastPaletteTypesToInt()
