@@ -11,25 +11,36 @@ public class PlayCameraController : MonoBehaviour
 
     private BoundsInt bounds;
     private Camera cam;
+    private float camSize;
     private Vector3 velocity = Vector3.zero;
 
     void Start()
     {
         transform.position = player.transform.position + Vector3.back * 10f;
         cam = GetComponent<Camera>();
+        camSize = cam.orthographicSize;
+        if (cam.aspect > 2.0f/1.0f) 
+        {
+            camSize *= (2.0f/1.0f) / cam.aspect; 
+            cam.orthographicSize = camSize;
+        }
     }
 
     void LateUpdate()
     {
         Vector3 destination;
         destination = (Vector3)player.GetComponent<Rigidbody2D>().position + Vector3.back * 10f +
-                Vector3.right * lookAheadX * player.GetComponent<Rigidbody2D>().velocity.x +
+            Vector3.right * lookAheadX * player.GetComponent<Rigidbody2D>().velocity.x +
             Vector3.up * lookAheadY * player.GetComponent<Rigidbody2D>().velocity.y;
 
-        if (destination.y > bounds.yMax - 8.0f - 1.0f) destination = new Vector3(destination.x, bounds.yMax - 8.0f - 1.0f, destination.z);
-        if (destination.y < bounds.yMin + 8.0f) destination = new Vector3(destination.x, bounds.yMin + 8.0f, destination.z);
-        if (destination.x > bounds.xMax - cam.aspect * 8.0f - 1.0f) destination = new Vector3(bounds.xMax - cam.aspect * 8.0f - 1.0f, destination.y, destination.z);
-        if (destination.x < bounds.xMin + cam.aspect * 8.0f) destination = new Vector3(bounds.xMin + cam.aspect * 8.0f, destination.y, destination.z);
+        if (destination.y > bounds.yMax - camSize - 1.0f) 
+            destination = new Vector3(destination.x, bounds.yMax - camSize - 1.0f, destination.z);
+        if (destination.y < bounds.yMin + camSize) 
+            destination = new Vector3(destination.x, bounds.yMin + camSize, destination.z);
+        if (destination.x > bounds.xMax - cam.aspect * camSize - 1.0f) 
+            destination = new Vector3(bounds.xMax - cam.aspect * camSize - 1.0f, destination.y, destination.z);
+        if (destination.x < bounds.xMin + cam.aspect * camSize) 
+            destination = new Vector3(bounds.xMin + cam.aspect * camSize, destination.y, destination.z);
         transform.position = Vector3.SmoothDamp(transform.position, destination, ref velocity, smooth);
     }
 

@@ -36,6 +36,7 @@ public class LevelDraw : MonoBehaviour
     private Dictionary<string, Tilemap> tilemaps;
     private Dictionary<string, PaletteType> paletteTypes;
     private Dictionary<string, List<Vector3Int>> tiles;
+    private BoundsInt totalBounds;
 
     private Tools currentTool;
     private int currentPalette;
@@ -295,9 +296,9 @@ public class LevelDraw : MonoBehaviour
         if (paletteTypes[id] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
         else loadedTiles = loadedTilesFull;
         tiles[id].Add(location);
-        tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, tileUpdateRadiuses, location, id, tileNames)]);
-        UpdateSurroundingTiles(location, id);
+        tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], totalBounds, tileVariations, tileUpdateRadiuses, location, id, tileNames)]);
         playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
+        UpdateSurroundingTiles(location, id);
     }
 
     private void RemoveTile(string id, Vector3Int location)
@@ -305,9 +306,9 @@ public class LevelDraw : MonoBehaviour
         if (!tiles[id].Contains(location)) return;
         tiles[id].Remove(location);
         tilemaps[id].SetTile(location, null);
-        UpdateSurroundingTiles(location, id);
         tilemaps[id].CompressBounds();
         playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
+        UpdateSurroundingTiles(location, id);
     }
 
     private BoundsInt CalculateBounds()
@@ -326,14 +327,14 @@ public class LevelDraw : MonoBehaviour
         }
 
         int i = 0;
-        while (xMax - xMin < 32)
+        while (xMax - xMin < 34)
         {
             if (i % 2 == 0) xMax++;
             else xMin--;
             i++; 
         }
         i = 0;
-        while (yMax - yMin < 16)
+        while (yMax - yMin < 17)
         {
             if (i % 2 == 0) yMax++;
             else yMin--;
@@ -348,63 +349,64 @@ public class LevelDraw : MonoBehaviour
         Vector3[] spawns = { Vector3.up, Vector3.down, Vector3.left, Vector3.right };
         for (int spawn = 0; spawn < spawns.Length; spawn++) GetSpawn(spawns[spawn], output);
 
+        if (totalBounds != output)
+        {
+            totalBounds = output;
+            UpdateAllTiles();
+        }
         return output;
     }
 
     private Vector3 GetSpawn(Vector3 direction, BoundsInt bounds)
     {
         Vector3 output = Vector3.zero;
+        int boundsMin = 0;
+        int boundsMax = 0;
+        int boundsConstant = 0;
         if (direction.Equals(Vector3.up))
         {
-            output = new Vector3Int(bounds.xMin, bounds.yMax, 0);
-            for (int i = bounds.xMin; i <= bounds.xMax; i++)
-            {
-                bool isTileHere = false;
-                foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
-                {
-                    if (paletteTypes[entry.Key] == PaletteType.Collidable &&
-                        entry.Value.GetTile(new Vector3Int(i, bounds.yMax, 0)))
-                    {
-                        isTileHere = true; 
-                        break;
-                    }
-                }
-                if (!isTileHere) 
-                {
-                    output = new Vector3Int(i, bounds.yMax, 0);
-                    break;
-                }
-            }
+            boundsMin = bounds.xMin;
+            boundsMax = bounds.xMax;
+            boundsConstant = bounds.yMax;
         }
         else if (direction.Equals(Vector3.down))
         {
-            output = new Vector3Int(bounds.xMin, bounds.yMin, 0);
-            for (int i = bounds.xMin; i <= bounds.xMax; i++)
-            {
-                bool isTileHere = false;
-                foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
-                {
-                    if (paletteTypes[entry.Key] == PaletteType.Collidable &&
-                        entry.Value.GetTile(new Vector3Int(i, bounds.yMin, 0)))
-                    {
-                        isTileHere = true; 
-                        break;
-                    }
-                }
-                if (!isTileHere)
-                {
-                    output = new Vector3Int(i, bounds.yMin, 0);
-                    break;
-                }
-            }
+            boundsMin = bounds.xMin;
+            boundsMax = bounds.xMax;
+            boundsConstant = bounds.yMin;
         }
         else if (direction.Equals(Vector3.left))
         {
-            output = Vector3.left;
+            boundsMin = bounds.yMin;
+            boundsMax = bounds.yMax;
+            boundsConstant = bounds.xMin;
         }
         else if (direction.Equals(Vector3.right))
         {
-            output = Vector3.right;
+            boundsMin = bounds.yMin;
+            boundsMax = bounds.yMax;
+            boundsConstant = bounds.xMax;
+        }
+        else return output;
+
+        output = new Vector3Int(boundsMin, boundsConstant, 0);
+        for (int i = boundsMin; i <= boundsMax; i++)
+        {
+            bool isTileHere = false;
+            foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
+            {
+                if (paletteTypes[entry.Key] == PaletteType.Collidable &&
+                    entry.Value.GetTile(new Vector3Int(i, boundsConstant, 0)))
+                {
+                    isTileHere = true; 
+                    break;
+                }
+            }
+            if (!isTileHere) 
+            {
+                output = new Vector3Int(i, boundsConstant, 0);
+                break;
+            }
         }
         return output;
     }
@@ -542,7 +544,30 @@ public class LevelDraw : MonoBehaviour
                     && !(x == 0 && y == 0))
                 {
                     tilemaps[id].SetTile(location + new Vector3Int(x, y, 0),
-                        loadedTiles[TilePicker.GetTile(tiles[id], tileVariations, tileUpdateRadiuses, location + new Vector3Int(x, y, 0), id, tileNames)]);
+                        loadedTiles[TilePicker.GetTile(tiles[id], totalBounds, tileVariations, tileUpdateRadiuses, location + new Vector3Int(x, y, 0), id, tileNames)]);
+                }
+            }
+        }
+    }
+
+    private void UpdateAllTiles()
+    {
+        Dictionary<string, Tile> loadedTiles;
+        foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
+        {
+            if (paletteTypes[entry.Key] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
+            else loadedTiles = loadedTilesFull;
+
+            for (int x = totalBounds.xMin; x <= totalBounds.xMax; x++)
+            {
+                for (int y = totalBounds.yMin; y <= totalBounds.yMax; y++)
+                {
+                   if (tilemaps[entry.Key].GetTile<Tile>(new Vector3Int(x, y, 0)) != null
+                    && !(x == 0 && y == 0))
+                {
+                    tilemaps[entry.Key].SetTile(new Vector3Int(x, y, 0),
+                        loadedTiles[TilePicker.GetTile(tiles[entry.Key], totalBounds, tileVariations, tileUpdateRadiuses, new Vector3Int(x, y, 0), entry.Key, tileNames)]);
+                }
                 }
             }
         }
@@ -558,7 +583,7 @@ public class LevelDraw : MonoBehaviour
             tilemaps[entry.Key].ClearAllTiles();
             foreach (Vector3Int location in entry.Value)
             {
-                tilemaps[entry.Key].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[entry.Key], tileVariations, tileUpdateRadiuses, location, entry.Key, tileNames)]);
+                tilemaps[entry.Key].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[entry.Key], totalBounds, tileVariations, tileUpdateRadiuses, location, entry.Key, tileNames)]);
             }
         }
     }

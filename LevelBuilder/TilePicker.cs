@@ -6,9 +6,11 @@ using UnityEngine;
 public class TilePicker : MonoBehaviour
 {
     public static string GetTile(
-        List<Vector3Int> tiles, Dictionary<string, int> tileVariations, Dictionary<string, float> tileUpdateRadiuses,
-        Vector3Int location, string type, List<string> tileNames, float extremesBias = 1.25f, float noise = 0.3f, float shift = 0.2f)
+        List<Vector3Int> tiles, BoundsInt bounds, Dictionary<string, int> tileVariations, Dictionary<string, float> tileUpdateRadiuses,
+        Vector3Int location, string type, List<string> tileNames, float extremesBias = 1.0f, float noise = 0.25f, float shift = 0.2f)
     {
+        bounds.xMax -= 1;
+        bounds.yMax -= 1;
         string output = "";
 
         /*
@@ -18,49 +20,49 @@ public class TilePicker : MonoBehaviour
          */
 
         //check A
-        if (tiles.Contains(new Vector3Int(location.x - 1, location.y + 1, 0)) &&
-             tiles.Contains(new Vector3Int(location.x, location.y + 1, 0)) &&
-             tiles.Contains(new Vector3Int(location.x - 1, location.y, 0)))
+        if ((tiles.Contains(new Vector3Int(location.x - 1, location.y + 1, 0)) || (location.x - 1 < bounds.xMin || location.y + 1 > bounds.yMax)) &&
+             (tiles.Contains(new Vector3Int(location.x, location.y + 1, 0)) || location.y + 1 > bounds.yMax) &&
+             (tiles.Contains(new Vector3Int(location.x - 1, location.y, 0)) || location.x - 1 < bounds.xMin))
         { output += "a"; }
 
         //check B
-        if (tiles.Contains(new Vector3Int(location.x, location.y + 1, 0)))
+        if (tiles.Contains(new Vector3Int(location.x, location.y + 1, 0)) || location.y + 1 > bounds.yMax)
         { output += "b"; }
 
         //check C
-        if (tiles.Contains(new Vector3Int(location.x + 1, location.y + 1, 0)) &&
-             tiles.Contains(new Vector3Int(location.x, location.y + 1, 0)) &&
-             tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)))
+        if ((tiles.Contains(new Vector3Int(location.x + 1, location.y + 1, 0)) || (location.x + 1 > bounds.xMax || location.y + 1 > bounds.yMax)) &&
+             (tiles.Contains(new Vector3Int(location.x, location.y + 1, 0)) || location.y + 1 > bounds.yMax) &&
+             (tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)) || location.x + 1 > bounds.xMax))
         { output += "c"; }
 
         //check D
-        if (tiles.Contains(new Vector3Int(location.x - 1, location.y, 0)))
+        if (tiles.Contains(new Vector3Int(location.x - 1, location.y, 0)) || location.x - 1 < bounds.xMin)
         { output += "d"; }
 
         //check E
-        if (tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)))
+        if (tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)) || location.x + 1 > bounds.xMax)
         { output += "e"; }
 
         //check F
-        if (tiles.Contains(new Vector3Int(location.x - 1, location.y - 1, 0)) &&
-             tiles.Contains(new Vector3Int(location.x, location.y - 1, 0)) &&
-             tiles.Contains(new Vector3Int(location.x - 1, location.y, 0)))
+        if ((tiles.Contains(new Vector3Int(location.x - 1, location.y - 1, 0)) || (location.x - 1 < bounds.xMin || location.y - 1 < bounds.yMin)) &&
+             (tiles.Contains(new Vector3Int(location.x, location.y - 1, 0)) || location.y - 1 < bounds.yMin) &&
+             (tiles.Contains(new Vector3Int(location.x - 1, location.y, 0)) || location.x - 1 < bounds.xMin))
         { output += "f"; }
 
         //check G
-        if (tiles.Contains(new Vector3Int(location.x, location.y - 1, 0)))
+        if (tiles.Contains(new Vector3Int(location.x, location.y - 1, 0)) || location.y - 1 < bounds.yMin)
         { output += "g"; }
 
         //check H
-        if (tiles.Contains(new Vector3Int(location.x + 1, location.y - 1, 0)) &&
-             tiles.Contains(new Vector3Int(location.x, location.y - 1, 0)) &&
-             tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)))
+        if ((tiles.Contains(new Vector3Int(location.x + 1, location.y - 1, 0)) || (location.x + 1 > bounds.xMax || location.y - 1 < bounds.yMin)) &&
+             (tiles.Contains(new Vector3Int(location.x, location.y - 1, 0)) || location.y - 1 < bounds.yMin) &&
+             (tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)) || location.x + 1 > bounds.xMax))
         { output += "h"; }
 
         int random = Random.Range(1, tileVariations[output + "_" + type] + 1);
         if (output.Equals("abcdefgh") && tileUpdateRadiuses[type] > 1.0f)
         {
-            float edgeScore = EdgeScore2(tiles, location, Mathf.FloorToInt(tileUpdateRadiuses[type]));
+            float edgeScore = EdgeScore2(tiles, bounds, location, Mathf.FloorToInt(tileUpdateRadiuses[type]));
             edgeScore += Random.Range(-noise, noise) - ((extremesBias - 1) / 2f) + shift;
             edgeScore *= extremesBias;
             random = Mathf.RoundToInt(tileVariations[output + "_" + type] * edgeScore);
@@ -328,16 +330,25 @@ public class TilePicker : MonoBehaviour
         return ((float)(closest - (radius - 1))) / ((float)(radius - 1));
     }
 
-    private static float EdgeScore2(List<Vector3Int> tiles, Vector3Int location, int radius)
+    private static float EdgeScore2(List<Vector3Int> tiles, BoundsInt bounds, Vector3Int location, int radius)
     {
         int closest = radius + 1;
         if (radius <= 1) return 1;
         for (int r = 2; r <= radius; r++)
         {
-            if (!tiles.Contains(location + new Vector3Int(r, 0, 0))) {closest = r; break; }
-            else if (!tiles.Contains(location + new Vector3Int(-r, 0, 0))) {closest = r; break; }
-            else if (!tiles.Contains(location + new Vector3Int(0, r, 0))) {closest = r; break; }
-            else if (!tiles.Contains(location + new Vector3Int(0, -r, 0))) {closest = r; break; }
+            if (!tiles.Contains(location + new Vector3Int(r, 0, 0)) && (location + new Vector3Int(r, 0, 0)).x < bounds.xMax) { closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(-r, 0, 0)) && (location + new Vector3Int(-r, 0, 0)).x > bounds.xMin) { closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(0, r, 0)) && (location + new Vector3Int(0, r, 0)).y < bounds.yMax) { closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(0, -r, 0)) && (location + new Vector3Int(0, -r, 0)).y > bounds.yMin) { closest = r; break; }
+
+            else if (!tiles.Contains(location + new Vector3Int(r, r, 0))
+                && (location + new Vector3Int(r, 0, 0)).x < bounds.xMax && (location + new Vector3Int(0, r, 0)).y < bounds.yMax) { closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(r, -r, 0))
+                && (location + new Vector3Int(r, 0, 0)).x < bounds.xMax && (location + new Vector3Int(0, -r, 0)).y > bounds.yMin) { closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(-r, r, 0))
+                && (location + new Vector3Int(-r, 0, 0)).x > bounds.xMin && (location + new Vector3Int(0, r, 0)).y < bounds.yMax) { closest = r; break; }
+            else if (!tiles.Contains(location + new Vector3Int(-r, -r, 0))
+                && (location + new Vector3Int(-r, 0, 0)).x > bounds.xMin && (location + new Vector3Int(0, -r, 0)).y > bounds.yMin) { closest = r; break; }
         }
         Debug.Log("closest: " + closest + ", radius - 1: " + (radius - 1));
         Debug.Log(((float)(closest - (radius - 1))) / ((float)(radius - 1)));
