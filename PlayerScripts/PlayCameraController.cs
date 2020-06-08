@@ -16,7 +16,6 @@ public class PlayCameraController : MonoBehaviour
 
     void Start()
     {
-        transform.position = player.transform.position + Vector3.back * 10f;
         cam = GetComponent<Camera>();
         camSize = cam.orthographicSize;
         if (cam.aspect > 2.0f/1.0f) 
@@ -24,9 +23,15 @@ public class PlayCameraController : MonoBehaviour
             camSize *= (2.0f/1.0f) / cam.aspect; 
             cam.orthographicSize = camSize;
         }
+        GoToDestination();
     }
 
     void LateUpdate()
+    {
+        transform.position = Vector3.SmoothDamp(transform.position, CalculateDestination(), ref velocity, smooth);
+    }
+
+    private Vector3 CalculateDestination()
     {
         Vector3 destination;
         destination = (Vector3)player.GetComponent<Rigidbody2D>().position + Vector3.back * 10f +
@@ -41,11 +46,17 @@ public class PlayCameraController : MonoBehaviour
             destination = new Vector3(bounds.xMax - cam.aspect * camSize - 1.0f, destination.y, destination.z);
         if (destination.x < bounds.xMin + cam.aspect * camSize) 
             destination = new Vector3(bounds.xMin + cam.aspect * camSize, destination.y, destination.z);
-        transform.position = Vector3.SmoothDamp(transform.position, destination, ref velocity, smooth);
+        return destination;
     }
 
     public void UpdateBounds(BoundsInt bounds)
     {
         this.bounds = bounds;
+    }
+
+    public void GoToDestination()
+    {
+        Debug.Log("Hello");
+        transform.position = CalculateDestination();
     }
 }

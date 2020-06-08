@@ -86,8 +86,8 @@ public class IdolController : MonoBehaviour
         if (speedStretchY > -0.05f) speedStretchY = -0.05f;
         collisionDownEnter = collisionDown;
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.down * (m_boxCollider.size.y / 2f + (-speedStretchY) / 2f) + Vector3.right * speedStretchX, 
-            new Vector2(0.35f, -speedStretchY + 0.05f), collisionDownLayer, true);
+            Vector3.down * -speedStretchY + Vector3.right * speedStretchX, 
+            new Vector2(0.3f, 0.6f), collisionDownLayer, true);
         collisionDownEnter = collisionDown != collisionDownEnter;
 
         speedStretchY = m_Rigidbody.velocity.y * Time.fixedDeltaTime;

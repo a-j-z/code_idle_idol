@@ -350,8 +350,6 @@ public class TilePicker : MonoBehaviour
             else if (!tiles.Contains(location + new Vector3Int(-r, -r, 0))
                 && (location + new Vector3Int(-r, 0, 0)).x > bounds.xMin && (location + new Vector3Int(0, -r, 0)).y > bounds.yMin) { closest = r; break; }
         }
-        Debug.Log("closest: " + closest + ", radius - 1: " + (radius - 1));
-        Debug.Log(((float)(closest - (radius - 1))) / ((float)(radius - 1)));
         return ((float)(closest - (radius - 1))) / ((float)(radius - 1));
     }
 }

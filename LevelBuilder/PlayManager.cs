@@ -7,7 +7,7 @@ public class PlayManager : MonoBehaviour
 {
     public GameObject player;
     public GameObject idol;
-    public GameObject spawn;
+    public SpawnController spawn;
 
     public Camera buildCam;
     public Camera playCam;
@@ -35,10 +35,10 @@ public class PlayManager : MonoBehaviour
         buildUiContainer.SetActive(false);
         playUiContainer.SetActive(true);
 
-        spawn.SetActive(false);
-        player.transform.position = spawn.transform.position;
-        idol.transform.position = spawn.transform.position + Vector3.up + Vector3.back;
-        playCam.transform.position = player.transform.position + Vector3.back * 10f;
+        player.transform.position = spawn.GetSpawn(Vector3.left).transform.position;
+        idol.transform.position = spawn.GetSpawn(Vector3.left).transform.position;
+        playCam.GetComponent<PlayCameraController>().GoToDestination();
+        spawn.gameObject.SetActive(false);
 
         isPlay = true;
     }
@@ -54,7 +54,7 @@ public class PlayManager : MonoBehaviour
         buildUiContainer.SetActive(true);
         playUiContainer.SetActive(false);
 
-        spawn.SetActive(true);
+        spawn.gameObject.SetActive(true);
         isPlay = false;
     }
 

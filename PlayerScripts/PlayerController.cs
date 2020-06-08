@@ -64,11 +64,12 @@ public class PlayerController : MonoBehaviour
         if (collisionDown) collisionDownTimer = coyoteTime;
         collisionDownTimer -= Time.fixedDeltaTime;
 
-        speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
-        if (speedStretch < 0.05f) speedStretch = 0.05f;
+        //speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
+        //if (speedStretch < 0.05f) speedStretch = 0.05f;
         collisionUpEnter = collisionUp;
         collisionUp = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (m_boxCollider.size.y / 2f), new Vector2(0.5f, speedStretch * 2), collisionUpLayer, true);
+            //Vector3.up * (m_boxCollider.size.y / 2f), new Vector2(0.5f, speedStretch * 2), collisionUpLayer, true);
+            Vector3.up * (m_boxCollider.size.y / 2f), new Vector2(0.5f, 0.1f), collisionUpLayer, true);
         collisionUpEnter = collisionUp != collisionUpEnter;
 
         collisionUpLeft = CollisionUtilities.GetCollision(this.gameObject,

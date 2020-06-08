@@ -25,6 +25,7 @@ public class LevelDraw : MonoBehaviour
 {
     public Camera buildCam;
     public Camera playCam;
+    public SpawnController spawns;
     public PaletteMenuManager paletteMenuManager;
     [SerializeField] private LayerMask SafeCollidableLayer = new LayerMask();
     [SerializeField] private LayerMask IdolFilterLayer = new LayerMask();
@@ -346,8 +347,11 @@ public class LevelDraw : MonoBehaviour
             new Vector3(xMax - 1.5f, yMax - 1.5f, 0));
 
         BoundsInt output = new BoundsInt(xMin, yMin, 0, xMax - xMin, yMax - yMin, 0);
-        Vector3[] spawns = { Vector3.up, Vector3.down, Vector3.left, Vector3.right };
-        for (int spawn = 0; spawn < spawns.Length; spawn++) GetSpawn(spawns[spawn], output);
+        Vector3[] spawnLocations = { Vector3.up, Vector3.down, Vector3.left, Vector3.right };
+        for (int spawn = 0; spawn < spawnLocations.Length; spawn++) 
+        {
+            spawns.UpdatePosition(spawnLocations[spawn], GetSpawn(spawnLocations[spawn], output));
+        }
 
         if (totalBounds != output)
         {
@@ -363,51 +367,61 @@ public class LevelDraw : MonoBehaviour
         int boundsMin = 0;
         int boundsMax = 0;
         int boundsConstant = 0;
+        bool isVertical = true;
         if (direction.Equals(Vector3.up))
         {
             boundsMin = bounds.xMin;
-            boundsMax = bounds.xMax;
-            boundsConstant = bounds.yMax;
+            boundsMax = bounds.xMax - 1;
+            boundsConstant = bounds.yMax - 1;
+            isVertical = false;
         }
         else if (direction.Equals(Vector3.down))
         {
             boundsMin = bounds.xMin;
-            boundsMax = bounds.xMax;
+            boundsMax = bounds.xMax - 1;
             boundsConstant = bounds.yMin;
+            isVertical = false;
         }
         else if (direction.Equals(Vector3.left))
         {
             boundsMin = bounds.yMin;
-            boundsMax = bounds.yMax;
+            boundsMax = bounds.yMax - 1;
             boundsConstant = bounds.xMin;
+            isVertical = true;
         }
         else if (direction.Equals(Vector3.right))
         {
             boundsMin = bounds.yMin;
-            boundsMax = bounds.yMax;
-            boundsConstant = bounds.xMax;
+            boundsMax = bounds.yMax - 1;
+            boundsConstant = bounds.xMax - 1;
+            isVertical = true;
         }
         else return output;
 
+        bool foundOpening = false;
         output = new Vector3Int(boundsMin, boundsConstant, 0);
         for (int i = boundsMin; i <= boundsMax; i++)
         {
             bool isTileHere = false;
+            int x = isVertical ? boundsConstant : i;
+            int y = isVertical ? i : boundsConstant;
             foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
             {
                 if (paletteTypes[entry.Key] == PaletteType.Collidable &&
-                    entry.Value.GetTile(new Vector3Int(i, boundsConstant, 0)))
+                    entry.Value.GetTile(new Vector3Int(x, y, 0)))
                 {
                     isTileHere = true; 
                     break;
                 }
             }
-            if (!isTileHere) 
+            if (!isTileHere)
             {
-                output = new Vector3Int(i, boundsConstant, 0);
+                output = new Vector3Int(x, y, 0);
+                foundOpening = true;
                 break;
             }
         }
+        if (!foundOpening) return Vector3.zero;
         return output;
     }
 
