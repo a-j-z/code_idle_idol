@@ -23,7 +23,7 @@ public class PlayManager : MonoBehaviour
         Build();
     }
 
-    private void Play()
+    public void Play(Vector3 spawnDirection)
     {
         buildCam.enabled = false;
         playCam.enabled = true;
@@ -35,9 +35,11 @@ public class PlayManager : MonoBehaviour
         buildUiContainer.SetActive(false);
         playUiContainer.SetActive(true);
 
-        player.transform.position = spawn.GetSpawn(Vector3.left).transform.position;
-        idol.transform.position = spawn.GetSpawn(Vector3.left).transform.position;
-        playCam.GetComponent<PlayCameraController>().GoToDestination();
+        GameObject spawnPoint = spawn.GetSpawn(spawnDirection);
+        Vector3 spawnLocation = spawnPoint.activeSelf ? spawnPoint.transform.position : Vector3.zero;
+        player.GetComponent<Rigidbody2D>().position = spawnLocation;
+        idol.GetComponent<Rigidbody2D>().position = spawnLocation;
+        playCam.GetComponent<PlayCameraController>().GoToDestination(player.GetComponent<Rigidbody2D>().position);
         spawn.gameObject.SetActive(false);
 
         isPlay = true;
@@ -66,7 +68,7 @@ public class PlayManager : MonoBehaviour
         }
         else
         {
-            Play();
+            Play(Vector3.left);
         }
     }
 

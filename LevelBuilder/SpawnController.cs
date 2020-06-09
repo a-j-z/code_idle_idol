@@ -7,8 +7,14 @@ public class SpawnController : MonoBehaviour
     public Sprite spawnSymbol;
 
     private Dictionary<Vector3, GameObject> spawns;
+    private bool isInit = false;
 
     void Start()
+    {
+        if (!isInit) { Init(); isInit = true; }
+    }
+
+    private void Init()
     {
         spawns = new Dictionary<Vector3, GameObject>();
         spawns.Add(Vector3.up, new GameObject("SpawnUp"));
@@ -26,6 +32,7 @@ public class SpawnController : MonoBehaviour
 
     public void UpdatePosition(Vector3 direction, Vector3 position)
     {
+        if (!isInit) { Init(); isInit = true; }
         if (position.Equals(Vector3.zero))
         {
             spawns[direction].SetActive(false);
@@ -35,7 +42,6 @@ public class SpawnController : MonoBehaviour
             spawns[direction].SetActive(true);
             spawns[direction].transform.position = position;
         }
-        
     }
 
     public GameObject GetSpawn(Vector3 direction)

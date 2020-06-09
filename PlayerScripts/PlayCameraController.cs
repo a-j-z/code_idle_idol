@@ -23,18 +23,19 @@ public class PlayCameraController : MonoBehaviour
             camSize *= (2.0f/1.0f) / cam.aspect; 
             cam.orthographicSize = camSize;
         }
-        GoToDestination();
+        GoToDestination(player.GetComponent<Rigidbody2D>().position);
     }
 
     void LateUpdate()
     {
-        transform.position = Vector3.SmoothDamp(transform.position, CalculateDestination(), ref velocity, smooth);
+        transform.position = Vector3.SmoothDamp(
+            transform.position, CalculateDestination(player.GetComponent<Rigidbody2D>().position), ref velocity, smooth);
     }
 
-    private Vector3 CalculateDestination()
+    private Vector3 CalculateDestination(Vector3 target)
     {
         Vector3 destination;
-        destination = (Vector3)player.GetComponent<Rigidbody2D>().position + Vector3.back * 10f +
+        destination = target + Vector3.back * 10f +
             Vector3.right * lookAheadX * player.GetComponent<Rigidbody2D>().velocity.x +
             Vector3.up * lookAheadY * player.GetComponent<Rigidbody2D>().velocity.y;
 
@@ -54,9 +55,8 @@ public class PlayCameraController : MonoBehaviour
         this.bounds = bounds;
     }
 
-    public void GoToDestination()
+    public void GoToDestination(Vector3 target)
     {
-        Debug.Log("Hello");
-        transform.position = CalculateDestination();
+        transform.position = CalculateDestination(target);
     }
 }

@@ -7,7 +7,7 @@ public class TilePicker : MonoBehaviour
 {
     public static string GetTile(
         List<Vector3Int> tiles, BoundsInt bounds, Dictionary<string, int> tileVariations, Dictionary<string, float> tileUpdateRadiuses,
-        Vector3Int location, string type, List<string> tileNames, float extremesBias = 1.0f, float noise = 0.25f, float shift = 0.2f)
+        Vector3Int location, string type, List<string> tileNames, float extremesBias = 0.9f, float noise = 0.4f, float shift = 0.25f)
     {
         bounds.xMax -= 1;
         bounds.yMax -= 1;
@@ -62,7 +62,7 @@ public class TilePicker : MonoBehaviour
         int random = Random.Range(1, tileVariations[output + "_" + type] + 1);
         if (output.Equals("abcdefgh") && tileUpdateRadiuses[type] > 1.0f)
         {
-            float edgeScore = EdgeScore2(tiles, bounds, location, Mathf.FloorToInt(tileUpdateRadiuses[type]));
+            float edgeScore = EdgeScore(tiles, bounds, location, Mathf.FloorToInt(tileUpdateRadiuses[type]));
             edgeScore += Random.Range(-noise, noise) - ((extremesBias - 1) / 2f) + shift;
             edgeScore *= extremesBias;
             random = Mathf.RoundToInt(tileVariations[output + "_" + type] * edgeScore);
@@ -307,7 +307,7 @@ public class TilePicker : MonoBehaviour
         return Vector2.SignedAngle(new Vector2(0, 1), v - center);
     }
 
-    private static float EdgeScore(List<Vector3Int> tiles, Vector3Int location, int radius)
+    private static float EdgeScore(List<Vector3Int> tiles, BoundsInt bounds, Vector3Int location, int radius)
     {
         int closest = radius + 1;
         if (radius == 1) return 1;
@@ -317,16 +317,17 @@ public class TilePicker : MonoBehaviour
             {
                 if (Mathf.Abs(x) > 1 || Mathf.Abs(y) > 1)
                 {
-                    if (!tiles.Contains(location + new Vector3Int(x, y, 0)))
+                    if (!tiles.Contains(location + new Vector3Int(x, y, 0))
+                        && (location + new Vector3Int(x, y, 0)).x < bounds.xMax && (location + new Vector3Int(x, y, 0)).y < bounds.yMax
+                        && (location + new Vector3Int(x, y, 0)).x > bounds.xMin && (location + new Vector3Int(x, y, 0)).y > bounds.yMin)
                     {
                         int absX = Mathf.Abs(x); int absY = Mathf.Abs(y);
-                        if (closest > absX) closest = absX; if (closest > absY) closest = absY;
+                        int maxXY = Mathf.Max(absX, absY);
+                        if (closest > maxXY) closest = maxXY;
                     }
                 }
             }
         }
-        Debug.Log("closest: " + closest + ", radius - 1: " + (radius - 1));
-        Debug.Log(((float)(closest - (radius - 1))) / ((float)(radius - 1)));
         return ((float)(closest - (radius - 1))) / ((float)(radius - 1));
     }
 

@@ -26,6 +26,7 @@ public class LevelDraw : MonoBehaviour
     public Camera buildCam;
     public Camera playCam;
     public SpawnController spawns;
+    public ExitController exits;
     public PaletteMenuManager paletteMenuManager;
     [SerializeField] private LayerMask SafeCollidableLayer = new LayerMask();
     [SerializeField] private LayerMask IdolFilterLayer = new LayerMask();
@@ -351,6 +352,8 @@ public class LevelDraw : MonoBehaviour
         for (int spawn = 0; spawn < spawnLocations.Length; spawn++) 
         {
             spawns.UpdatePosition(spawnLocations[spawn], GetSpawn(spawnLocations[spawn], output));
+            exits.UpdatePosition(spawnLocations[spawn], GetExitPosition(spawnLocations[spawn], output));
+            exits.UpdateScale(spawnLocations[spawn], GetExitScale(spawnLocations[spawn], output));
         }
 
         if (totalBounds != output)
@@ -422,6 +425,46 @@ public class LevelDraw : MonoBehaviour
             }
         }
         if (!foundOpening) return Vector3.zero;
+        return output;
+    }
+
+    private Vector3 GetExitPosition(Vector3 direction, BoundsInt bounds)
+    {
+        Vector3 output = Vector3.zero;
+
+        if (direction.Equals(Vector3.up))
+        {
+            output = new Vector3((float)(bounds.xMax + bounds.xMin) / 2.0f - 0.5f, bounds.yMax + 0.6f, 0f);
+        }
+        else if (direction.Equals(Vector3.down))
+        {
+            output = new Vector3((float)(bounds.xMax + bounds.xMin) / 2.0f - 0.5f, bounds.yMin - 1.6f, 0f);
+        }
+        else if (direction.Equals(Vector3.left))
+        {
+            output = new Vector3(bounds.xMin - 1.3f, (float)(bounds.yMax + bounds.yMin) / 2.0f - 0.5f, 0f);
+        }
+        else if (direction.Equals(Vector3.right))
+        {
+            output = new Vector3(bounds.xMax + 0.3f, (float)(bounds.yMax + bounds.yMin) / 2.0f - 0.5f, 0f);
+        }
+
+        return output;
+    }
+
+    private Vector3 GetExitScale(Vector3 direction, BoundsInt bounds)
+    {
+        Vector3 output = Vector3.zero;
+
+        if (direction.Equals(Vector3.up) || direction.Equals(Vector3.down))
+        {
+            output = new Vector3(bounds.xMax - bounds.xMin, 1.0f, 0f);
+        }
+        else if (direction.Equals(Vector3.left) || direction.Equals(Vector3.right))
+        {
+            output = new Vector3(1.0f, bounds.yMax - bounds.yMin, 0f);
+        }
+
         return output;
     }
 
@@ -643,18 +686,17 @@ public class LevelDraw : MonoBehaviour
 
     public void New()
     {
-        foreach (KeyValuePair<string, List<Vector3Int>> entry in tiles)
-        {
-            tilemaps[entry.Key].ClearAllTiles();
-            tiles[entry.Key].Clear();
-        }
-        DrawTiles();
-        playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
+        LoadFromFile(Application.dataPath + "/Resources/default.lvl");
     }
 
     public void Load()
     {
         string path = FileUtilities.LoadDialog();
+        LoadFromFile(path);
+    }
+
+    private void LoadFromFile(string path)
+    {
         try
         {
             foreach (KeyValuePair<string, List<Vector3Int>> entry in tiles)

@@ -184,7 +184,7 @@ public class IdolController : MonoBehaviour
             canTeleport = true;
         }
         
-        if (collisionUp && canExtendThrow && !isCarried)
+        if (collisionUp && canExtendThrow && !isCarried && m_Rigidbody.velocity.y > 0)
         {
             canExtendThrow = false;
             m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, 0f);
