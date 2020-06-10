@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class CursorController : MonoBehaviour
 {
     public Camera cam;
+    public LevelDraw draw;
 
     private Vector3 worldPoint;
     private Vector2 screenPoint;
@@ -27,8 +28,9 @@ public class CursorController : MonoBehaviour
         worldPoint = MouseUtilities.GridSpace(cam);
         screenPoint = RectTransformUtility.WorldToScreenPoint(cam, worldPoint);
 
-        cursorSize = Screen.height / (cam.orthographicSize * 2);
-        rt.sizeDelta = new Vector2(cursorSize, cursorSize);
+        cursorSize = (Screen.height / 100f) / (cam.orthographicSize * 2);
+        rt.localScale = new Vector3(cursorSize, cursorSize, 0);
+        rt.sizeDelta = draw.GetCurrentPaletteSize();
         rt.anchoredPosition = screenPoint - canvasRt.sizeDelta / 2f;
     }
 }

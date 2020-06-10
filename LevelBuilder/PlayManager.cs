@@ -38,6 +38,7 @@ public class PlayManager : MonoBehaviour
         GameObject spawnPoint = spawn.GetSpawn(spawnDirection);
         Vector3 spawnLocation = spawnPoint.activeSelf ? spawnPoint.transform.position : Vector3.zero;
         player.GetComponent<Rigidbody2D>().position = spawnLocation;
+        player.GetComponent<PlayerController>().Init(spawnDirection);
         idol.GetComponent<Rigidbody2D>().position = spawnLocation;
         playCam.GetComponent<PlayCameraController>().GoToDestination(player.GetComponent<Rigidbody2D>().position);
         spawn.gameObject.SetActive(false);

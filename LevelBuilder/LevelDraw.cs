@@ -524,6 +524,12 @@ public class LevelDraw : MonoBehaviour
         return (int)paletteTypes[paletteName];
     }
 
+    public Vector2 GetCurrentPaletteSize()
+    {
+        return loadedTilesFull["_" + tileTypes[currentPalette] + "_1"].sprite.rect.size;// /
+            //loadedTilesFull["_" + tileTypes[currentPalette] + "_1"].sprite.pixelsPerUnit;
+    }
+
     public float GetLayer(string layer)
     {
         return tilemaps[layer].transform.position.z;

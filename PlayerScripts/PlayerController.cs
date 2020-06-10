@@ -52,6 +52,7 @@ public class PlayerController : MonoBehaviour
         detectDistance = 0f;
         facingRight = true;
     }
+
     void FixedUpdate()
     {
         speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
@@ -85,6 +86,19 @@ public class PlayerController : MonoBehaviour
             Vector2.right * (m_boxCollider.size.x  / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer);
     }
 
+    public void Init(Vector3 spawnDirection)
+    {
+        if (spawnDirection.Equals(Vector3.down))
+        {
+            //jumpStartHeight = m_Rigidbody.position.y;
+            m_Rigidbody.velocity = new Vector2(0f, jumpUpSpeed);
+        }
+        else if (spawnDirection.Equals(Vector3.up))
+        {
+            m_Rigidbody.velocity = Vector3.zero;
+        }
+    }
+
     public void Move(float move, float speed, bool jump, bool extendJump)
     {
         Vector3 targetVelocity = new Vector2(move * speed, m_Rigidbody.velocity.y);
@@ -101,7 +115,7 @@ public class PlayerController : MonoBehaviour
 
         if (collisionDownTimer > 0f && jump && canJump)
         {
-            jumpStartHeight = transform.position.y;
+            jumpStartHeight = m_Rigidbody.position.y;
             canExtendJump = true;
             canJump = false;
             stillHoldingJump = true;

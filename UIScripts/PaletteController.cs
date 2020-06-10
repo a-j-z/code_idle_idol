@@ -19,6 +19,5 @@ public class PaletteController : MonoBehaviour
     void Update()
     {
         text.text = tileTypes[draw.GetPalette()];
-
     }
 }

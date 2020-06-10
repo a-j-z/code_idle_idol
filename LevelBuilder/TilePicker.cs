@@ -58,6 +58,10 @@ public class TilePicker : MonoBehaviour
              (tiles.Contains(new Vector3Int(location.x, location.y - 1, 0)) || location.y - 1 < bounds.yMin) &&
              (tiles.Contains(new Vector3Int(location.x + 1, location.y, 0)) || location.x + 1 > bounds.xMax))
         { output += "h"; }
+        if (!tileNames.Contains(output + "_" + type + "_1"))
+        {
+            return "_" + type + "_1";
+        }
 
         int random = Random.Range(1, tileVariations[output + "_" + type] + 1);
         if (output.Equals("abcdefgh") && tileUpdateRadiuses[type] > 1.0f)
