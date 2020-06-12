@@ -40,8 +40,16 @@ public class PlayerController : MonoBehaviour
     private BoxCollider2D m_boxCollider;
     private Vector3 m_Velocity = Vector3.zero;
 
+    private bool isInit = false;
+
     void Start()
     {
+        if (!isInit) Init();
+    }
+
+    private void Init()
+    {
+        isInit = true;
         m_Sprite = GetComponent<SpriteRenderer>();
         m_Rigidbody = GetComponent<Rigidbody2D>();
         m_boxCollider = GetComponent<BoxCollider2D>();
@@ -86,11 +94,13 @@ public class PlayerController : MonoBehaviour
             Vector2.right * (m_boxCollider.size.x  / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer);
     }
 
-    public void Init(Vector3 spawnDirection)
+    public void Spawn(Vector3 spawnLocation, Vector3 spawnDirection)
     {
+        if (!isInit) Init();
+        m_Rigidbody.position = spawnLocation;
         if (spawnDirection.Equals(Vector3.down))
         {
-            //jumpStartHeight = m_Rigidbody.position.y;
+            jumpStartHeight = m_Rigidbody.position.y;
             m_Rigidbody.velocity = new Vector2(0f, jumpUpSpeed);
         }
         else if (spawnDirection.Equals(Vector3.up))

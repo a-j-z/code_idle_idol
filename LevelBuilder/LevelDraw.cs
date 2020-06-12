@@ -434,19 +434,19 @@ public class LevelDraw : MonoBehaviour
 
         if (direction.Equals(Vector3.up))
         {
-            output = new Vector3((float)(bounds.xMax + bounds.xMin) / 2.0f - 0.5f, bounds.yMax + 0.6f, 0f);
+            output = new Vector3((float)(bounds.xMax + bounds.xMin) / 2.0f - 0.5f, bounds.yMax + 0.8f, 0f);
         }
         else if (direction.Equals(Vector3.down))
         {
-            output = new Vector3((float)(bounds.xMax + bounds.xMin) / 2.0f - 0.5f, bounds.yMin - 1.6f, 0f);
+            output = new Vector3((float)(bounds.xMax + bounds.xMin) / 2.0f - 0.5f, bounds.yMin - 1.8f, 0f);
         }
         else if (direction.Equals(Vector3.left))
         {
-            output = new Vector3(bounds.xMin - 1.3f, (float)(bounds.yMax + bounds.yMin) / 2.0f - 0.5f, 0f);
+            output = new Vector3(bounds.xMin - 1.5f, (float)(bounds.yMax + bounds.yMin) / 2.0f - 0.5f, 0f);
         }
         else if (direction.Equals(Vector3.right))
         {
-            output = new Vector3(bounds.xMax + 0.3f, (float)(bounds.yMax + bounds.yMin) / 2.0f - 0.5f, 0f);
+            output = new Vector3(bounds.xMax + 0.5f, (float)(bounds.yMax + bounds.yMin) / 2.0f - 0.5f, 0f);
         }
 
         return output;
