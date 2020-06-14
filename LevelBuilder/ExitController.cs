@@ -15,13 +15,14 @@ public class ExitController : MonoBehaviour
         if (!isInit) { Init(); isInit = true; }
     }
 
-    void Update()
+    void FixedUpdate()
     {
         foreach(KeyValuePair<Vector3, GameObject> exit in exits)
         {
             if (exit.Value.gameObject.GetComponent<BoxCollider2D>().IsTouching(player))
             {
                 playManager.Play(exit.Key * -1);
+                break;
             }
         }
     }

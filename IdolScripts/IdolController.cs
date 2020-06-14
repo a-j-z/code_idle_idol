@@ -94,7 +94,7 @@ public class IdolController : MonoBehaviour
         if (speedStretchY < 0.05f) speedStretchY = 0.05f;
         collisionUpEnter = collisionUp;
         collisionUp = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.up * (m_boxCollider.size.y / 2f + 0.05f), new Vector2(0.25f, (speedStretchY + 0.05f) * 2f), collisionUpLayer);
+            Vector3.up * (m_boxCollider.size.y / 2f + 0.05f), new Vector2(0.25f, (speedStretchY + 0.05f) * 2f), collisionUpLayer, true);
         collisionUpEnter = collisionUp != collisionUpEnter;
 
         collisionLeft = CollisionUtilities.GetCollision(this.gameObject,
@@ -247,7 +247,7 @@ public class IdolController : MonoBehaviour
     {
         if (isCarried)
         {
-            m_Rigidbody.velocity = new Vector2(playerRigidbody.velocity.x * 2f, m_Rigidbody.velocity.y);
+            m_Rigidbody.velocity = new Vector2((player.GetFacingRight() ? 1 : -1) * throwPower, m_Rigidbody.velocity.y);
             throwStartHeight = playerRigidbody.position.y + carryHeight;
             isThrown = true;
             canExtendThrow = true;
@@ -258,7 +258,7 @@ public class IdolController : MonoBehaviour
 
     private void Drop()
     {
-        m_Rigidbody.velocity = new Vector2(playerRigidbody.velocity.x, m_Rigidbody.velocity.y);
+        m_Rigidbody.velocity = new Vector2(0f, m_Rigidbody.velocity.y);
         isCarried = false;
         canCarry = false;
     }

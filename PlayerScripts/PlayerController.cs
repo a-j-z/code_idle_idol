@@ -18,6 +18,7 @@ public class PlayerController : MonoBehaviour
     private bool canJump;
     private bool canExtendJump;
     private bool stillHoldingJump;
+    private bool transitionJump;
     private bool facingRight;
     private bool teleporting;
 
@@ -100,8 +101,9 @@ public class PlayerController : MonoBehaviour
         m_Rigidbody.position = spawnLocation;
         if (spawnDirection.Equals(Vector3.down))
         {
+            Debug.Log("Transition Jump!");
             jumpStartHeight = m_Rigidbody.position.y;
-            m_Rigidbody.velocity = new Vector2(0f, jumpUpSpeed);
+            transitionJump = true;
         }
         else if (spawnDirection.Equals(Vector3.up))
         {
@@ -123,14 +125,25 @@ public class PlayerController : MonoBehaviour
             facingRight = false;
         }
 
-        if (collisionDownTimer > 0f && jump && canJump)
+        if (transitionJump)
+        {
+            canExtendJump = true;
+            canJump = false;
+            stillHoldingJump = true;
+        }
+        if ((collisionDownTimer > 0f && jump && canJump) || transitionJump)
         {
             jumpStartHeight = m_Rigidbody.position.y;
             canExtendJump = true;
             canJump = false;
             stillHoldingJump = true;
         }
-        if (!jump) stillHoldingJump = false;
+        
+        if (!jump) 
+        {
+            stillHoldingJump = false;
+            transitionJump = false;
+        }
         if (collisionDown && !stillHoldingJump)
         {
             canJump = true;
@@ -161,13 +174,14 @@ public class PlayerController : MonoBehaviour
             m_Rigidbody.position += Vector2.up * ((0.6f - collisionRightStep) + 0.1f);
         }
 
-        if (extendJump && canExtendJump && transform.position.y - jumpStartHeight < jumpHeight)
+        if ((extendJump || transitionJump) && canExtendJump && transform.position.y - jumpStartHeight < jumpHeight)
         {
             m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, jumpUpSpeed);
         }
         else
         {
             canExtendJump = false;
+            //transitionJump = false;
             m_Rigidbody.velocity -= new Vector2(0, jumpPeakSmooth * Time.fixedDeltaTime);
             if (m_Rigidbody.velocity.y < -jumpDownSpeed)
             {
@@ -184,6 +198,8 @@ public class PlayerController : MonoBehaviour
         {
             m_Sprite.enabled = true;
         }
+
+        Debug.Log(jumpStartHeight + " transitionJump: " + transitionJump);
     }
 
     public bool GetFacingRight()
