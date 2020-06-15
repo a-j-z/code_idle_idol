@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
     private bool canExtendJump;
     private bool stillHoldingJump;
     private bool transitionJump;
+    private bool transitionJumpBuffer;
     private bool facingRight;
     private bool teleporting;
 
@@ -58,6 +59,7 @@ public class PlayerController : MonoBehaviour
         collisionUp = false;
         canJump = false;
         canExtendJump = false;
+        transitionJumpBuffer = false;
         detectDistance = 0f;
         facingRight = true;
     }
@@ -101,8 +103,6 @@ public class PlayerController : MonoBehaviour
         m_Rigidbody.position = spawnLocation;
         if (spawnDirection.Equals(Vector3.down))
         {
-            Debug.Log("Transition Jump!");
-            jumpStartHeight = m_Rigidbody.position.y;
             transitionJump = true;
         }
         else if (spawnDirection.Equals(Vector3.up))
@@ -124,14 +124,18 @@ public class PlayerController : MonoBehaviour
         {
             facingRight = false;
         }
-
+        if (transitionJumpBuffer != transitionJump && transitionJump)
+        {
+            Debug.Log("Transition Jump!");
+            jumpStartHeight = m_Rigidbody.position.y;
+        }
         if (transitionJump)
         {
             canExtendJump = true;
             canJump = false;
             stillHoldingJump = true;
         }
-        if ((collisionDownTimer > 0f && jump && canJump) || transitionJump)
+        if (collisionDownTimer > 0f && jump && canJump)
         {
             jumpStartHeight = m_Rigidbody.position.y;
             canExtendJump = true;
@@ -142,7 +146,7 @@ public class PlayerController : MonoBehaviour
         if (!jump) 
         {
             stillHoldingJump = false;
-            transitionJump = false;
+            //transitionJump = false;
         }
         if (collisionDown && !stillHoldingJump)
         {
@@ -174,14 +178,15 @@ public class PlayerController : MonoBehaviour
             m_Rigidbody.position += Vector2.up * ((0.6f - collisionRightStep) + 0.1f);
         }
 
-        if ((extendJump || transitionJump) && canExtendJump && transform.position.y - jumpStartHeight < jumpHeight)
+        if ((extendJump || transitionJump) && canExtendJump && m_Rigidbody.position.y - jumpStartHeight < jumpHeight)
         {
             m_Rigidbody.velocity = new Vector2(m_Rigidbody.velocity.x, jumpUpSpeed);
         }
         else
         {
+            Debug.Log("Stopped jump: " + extendJump + " " + transitionJump + " " + canExtendJump + " " + (m_Rigidbody.position.y - jumpStartHeight < jumpHeight));
             canExtendJump = false;
-            //transitionJump = false;
+            transitionJump = false;
             m_Rigidbody.velocity -= new Vector2(0, jumpPeakSmooth * Time.fixedDeltaTime);
             if (m_Rigidbody.velocity.y < -jumpDownSpeed)
             {
@@ -200,6 +205,7 @@ public class PlayerController : MonoBehaviour
         }
 
         Debug.Log(jumpStartHeight + " transitionJump: " + transitionJump);
+        transitionJumpBuffer = transitionJump;
     }
 
     public bool GetFacingRight()
