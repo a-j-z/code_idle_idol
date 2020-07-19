@@ -27,6 +27,7 @@ public class LevelDraw : MonoBehaviour
     public Camera playCam;
     public SpawnController spawns;
     public ExitController exits;
+    public GateController gates;
     public PaletteMenuManager paletteMenuManager;
     [SerializeField] private LayerMask SafeCollidableLayer = new LayerMask();
     [SerializeField] private LayerMask IdolFilterLayer = new LayerMask();
@@ -351,9 +352,12 @@ public class LevelDraw : MonoBehaviour
         Vector3[] spawnLocations = { Vector3.up, Vector3.down, Vector3.left, Vector3.right };
         for (int spawn = 0; spawn < spawnLocations.Length; spawn++) 
         {
-            spawns.UpdatePosition(spawnLocations[spawn], GetSpawn(spawnLocations[spawn], output));
+            Vector3[] spawnData = GetSpawn(spawnLocations[spawn], output);
+            spawns.UpdatePosition(spawnLocations[spawn], spawnData[0]);
             exits.UpdatePosition(spawnLocations[spawn], GetExitPosition(spawnLocations[spawn], output));
             exits.UpdateScale(spawnLocations[spawn], GetExitScale(spawnLocations[spawn], output));
+            gates.UpdatePosition(spawnLocations[spawn], spawnData[0]);
+            gates.UpdateLength(spawnLocations[spawn], spawnData[1]);
         }
 
         if (totalBounds != output)
@@ -364,9 +368,10 @@ public class LevelDraw : MonoBehaviour
         return output;
     }
 
-    private Vector3 GetSpawn(Vector3 direction, BoundsInt bounds)
+    private Vector3[] GetSpawn(Vector3 direction, BoundsInt bounds)
     {
-        Vector3 output = Vector3.zero;
+        Vector3[] output = {Vector3.zero, Vector3.zero};
+        Vector3[] defaultOutput = {Vector3.zero, Vector3.zero};
         int boundsMin = 0;
         int boundsMax = 0;
         int boundsConstant = 0;
@@ -402,7 +407,8 @@ public class LevelDraw : MonoBehaviour
         else return output;
 
         bool foundOpening = false;
-        output = new Vector3Int(boundsMin, boundsConstant, 0);
+        output[0] = new Vector3Int(boundsMin, boundsConstant, 0);
+        int gapSize = 0;
         for (int i = boundsMin; i <= boundsMax; i++)
         {
             bool isTileHere = false;
@@ -419,12 +425,20 @@ public class LevelDraw : MonoBehaviour
             }
             if (!isTileHere)
             {
-                output = new Vector3Int(x, y, 0);
+                if (gapSize == 0) output[0] = new Vector3Int(x, y, 0);
                 foundOpening = true;
+                gapSize++;
+            }
+            if (isTileHere && gapSize > 0)
+            {
                 break;
             }
         }
-        if (!foundOpening) return Vector3.zero;
+        output[1] = new Vector3(gapSize, gapSize, gapSize);
+        if (!foundOpening) 
+        {
+            return defaultOutput;
+        }
         return output;
     }
 

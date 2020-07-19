@@ -47,6 +47,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         if (!isInit) Init();
+        SetColliders();
     }
 
     private void Init()
@@ -64,13 +65,19 @@ public class PlayerController : MonoBehaviour
         facingRight = true;
     }
 
+    private void SetColliders()
+    {
+
+    }
+
     void FixedUpdate()
     {
         speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
         if (speedStretch > -0.05f) speedStretch = -0.05f;
         collisionDownEnter = collisionDown;
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
-            Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.55f, -speedStretch * 2), layer, true);
+            //Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.55f, -speedStretch * 2), layer, true);
+            Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.55f, 0.1f), layer, true);
         collisionDownEnter = collisionDown != collisionDownEnter;
 
         if (collisionDown) collisionDownTimer = coyoteTime;
@@ -119,10 +126,12 @@ public class PlayerController : MonoBehaviour
         if (move > 0)
         {
             facingRight = true;
+            transform.localScale = new Vector3(1, 1, 1);
         }
         else if (move < 0)
         {
             facingRight = false;
+            transform.localScale = new Vector3(-1, 1, 1);
         }
         if (transitionJumpBuffer != transitionJump && transitionJump)
         {
@@ -161,7 +170,7 @@ public class PlayerController : MonoBehaviour
         {
             m_Rigidbody.position += Vector2.left * 0.1f;
         }
-        else if (collisionUpEnter && (m_Rigidbody.velocity.y > 0 || !collisionDown))
+        else if (collisionUpEnter && !transitionJump && (m_Rigidbody.velocity.y > 0 || !collisionDown))
         {
             canExtendJump = false;
             canJump = false;

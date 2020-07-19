@@ -87,7 +87,7 @@ public class IdolController : MonoBehaviour
         collisionDownEnter = collisionDown;
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
             Vector3.down * -speedStretchY + Vector3.right * speedStretchX, 
-            new Vector2(0.3f, 0.6f), collisionDownLayer, true);
+            new Vector2(0.25f, 0.6f), collisionDownLayer, true);
         collisionDownEnter = collisionDown != collisionDownEnter;
 
         speedStretchY = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
@@ -122,6 +122,11 @@ public class IdolController : MonoBehaviour
         teleportTimer -= Time.fixedDeltaTime;
         teleportRechargeTimer -= Time.fixedDeltaTime;
         rechargeIndicator.SetFill(teleportRechargeTimer / teleportRechargeDuration);
+    }
+
+    public void Spawn()
+    {
+        isCarried = true;
     }
 
     public void Move(bool interact, bool extendInteract, bool interactSecondary, bool teleport)
@@ -174,6 +179,7 @@ public class IdolController : MonoBehaviour
         {
             player.SetTeleporting(false);
             playerRigidbody.velocity = playerVelocityBuffer;
+            playerRigidbody.velocity *= new Vector2(1,0);
             m_Rigidbody.velocity = velocityBuffer;
             teleportBuffer = false;
             teleportRechargeTimer = teleportRechargeDuration;
@@ -261,5 +267,10 @@ public class IdolController : MonoBehaviour
         m_Rigidbody.velocity = new Vector2(0f, m_Rigidbody.velocity.y);
         isCarried = false;
         canCarry = false;
+    }
+
+    public bool GetIsCarried()
+    {
+        return isCarried;
     }
 }
