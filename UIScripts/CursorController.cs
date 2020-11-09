@@ -31,6 +31,7 @@ public class CursorController : MonoBehaviour
         cursorSize = (Screen.height / 100f) / (cam.orthographicSize * 2);
         rt.localScale = new Vector3(cursorSize, cursorSize, 0);
         rt.sizeDelta = draw.GetCurrentPaletteSize();
-        rt.anchoredPosition = screenPoint - canvasRt.sizeDelta / 2f;
+        rt.anchoredPosition = screenPoint - canvasRt.sizeDelta / 2f + new Vector2(
+            (rt.sizeDelta.x % 200 == 0) ? (50f * rt.localScale.x) : 0, (rt.sizeDelta.y % 200 == 0) ? (50f * rt.localScale.y) : 0);
     }
 }

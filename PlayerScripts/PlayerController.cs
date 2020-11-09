@@ -11,6 +11,9 @@ public class PlayerController : MonoBehaviour
     public float coyoteTime = 0.1f;
     [SerializeField] private LayerMask layer = new LayerMask();
     [SerializeField] private LayerMask collisionUpLayer = new LayerMask();
+    [SerializeField] private LayerMask dangerLayer = new LayerMask();
+    public PlayManager playManager;
+    public GameObject dustAnim;
 
     private SpriteRenderer m_Sprite;
 
@@ -33,12 +36,14 @@ public class PlayerController : MonoBehaviour
     private bool collisionUpLeft;
     private bool collisionUpRight;
     private bool collisionUpMiddle;
+    private bool collisionDanger;
 
     private float collisionLeftStep;
     private float collisionRightStep;
     private float detectDistance;
 
     private Rigidbody2D m_Rigidbody;
+    
     private BoxCollider2D m_boxCollider;
     private Vector3 m_Velocity = Vector3.zero;
 
@@ -47,7 +52,6 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         if (!isInit) Init();
-        SetColliders();
     }
 
     private void Init()
@@ -65,11 +69,6 @@ public class PlayerController : MonoBehaviour
         facingRight = true;
     }
 
-    private void SetColliders()
-    {
-
-    }
-
     void FixedUpdate()
     {
         speedStretch = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
@@ -78,7 +77,7 @@ public class PlayerController : MonoBehaviour
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
             //Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.55f, -speedStretch * 2), layer, true);
             Vector3.down * (m_boxCollider.size.y / 2f), new Vector2(0.55f, 0.1f), layer, true);
-        collisionDownEnter = collisionDown != collisionDownEnter;
+        collisionDownEnter = collisionDown != collisionDownEnter && collisionDown;
 
         if (collisionDown) collisionDownTimer = coyoteTime;
         collisionDownTimer -= Time.fixedDeltaTime;
@@ -97,6 +96,9 @@ public class PlayerController : MonoBehaviour
             Vector3.up * (m_boxCollider.size.y / 2f + 0.1f) + Vector3.right * 0.24f, new Vector2(0.1f, 0.3f), collisionUpLayer);
         collisionUpMiddle = CollisionUtilities.GetCollision(this.gameObject,
             Vector3.up * (m_boxCollider.size.y / 2f + 0.1f), new Vector2(0.4f, 0.3f), collisionUpLayer);
+
+        collisionDanger = CollisionUtilities.GetCollision(this.gameObject,
+            Vector3.zero, new Vector2(0.6f, 1.2f), dangerLayer);
 
         collisionLeftStep = CollisionUtilities.GetCollisionDistance(this.gameObject,
             Vector2.left * (m_boxCollider.size.x / 2f + (0.1f * detectDistance)), Vector2.down, m_boxCollider.size.y / 2f, layer);
@@ -123,6 +125,10 @@ public class PlayerController : MonoBehaviour
         Vector3 targetVelocity = new Vector2(move * speed, m_Rigidbody.velocity.y);
         m_Rigidbody.velocity = Vector3.SmoothDamp(m_Rigidbody.velocity, targetVelocity, ref m_Velocity, movementSmoothing * Time.fixedDeltaTime);
 
+        if (collisionDanger)
+        {
+            playManager.Play(Vector3.left);
+        }
         if (move > 0)
         {
             facingRight = true;
@@ -155,8 +161,8 @@ public class PlayerController : MonoBehaviour
         if (!jump) 
         {
             stillHoldingJump = false;
-            //transitionJump = false;
         }
+
         if (collisionDown && !stillHoldingJump)
         {
             canJump = true;
@@ -193,7 +199,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            Debug.Log("Stopped jump: " + extendJump + " " + transitionJump + " " + canExtendJump + " " + (m_Rigidbody.position.y - jumpStartHeight < jumpHeight));
+            //Debug.Log("Stopped jump: " + extendJump + " " + transitionJump + " " + canExtendJump + " " + (m_Rigidbody.position.y - jumpStartHeight < jumpHeight));
             canExtendJump = false;
             transitionJump = false;
             m_Rigidbody.velocity -= new Vector2(0, jumpPeakSmooth * Time.fixedDeltaTime);
@@ -212,9 +218,18 @@ public class PlayerController : MonoBehaviour
         {
             m_Sprite.enabled = true;
         }
-
-        Debug.Log(jumpStartHeight + " transitionJump: " + transitionJump);
         transitionJumpBuffer = transitionJump;
+
+        /* ANIMATIONS */
+
+        if (collisionDownEnter) 
+        {
+            GameObject dustRight = Instantiate(dustAnim);
+            dustRight.transform.position = transform.position + new Vector3(0.92f, -0.274f, 0f);
+            GameObject dustLeft = Instantiate(dustAnim);
+            dustLeft.transform.position += transform.position + new Vector3(-0.92f, -0.274f, 0f);
+            dustLeft.transform.localScale = new Vector3(-1f, 1f, 1f);
+        }
     }
 
     public bool GetFacingRight()

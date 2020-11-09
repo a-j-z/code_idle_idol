@@ -8,10 +8,12 @@ public class PlayerMovement : MonoBehaviour
     public float speed = 40f;
 
     private PlayerController controller;
+    
 
     private float horizontalMove = 0f;
     private bool jump = false;
     private bool extendJump = false;
+    
 
     public float jumpBuffer = 0.2f;
     private float m_jumpTimer;
@@ -33,10 +35,12 @@ public class PlayerMovement : MonoBehaviour
         jump = m_jumpTimer > 0;
         extendJump = inputManager.GetInput("jump");
 
+        
     }
 
     void FixedUpdate()
     {
         controller.Move(horizontalMove, speed  * Time.fixedDeltaTime, jump, extendJump);
+        
     }
 }

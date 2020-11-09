@@ -17,8 +17,8 @@ public enum PaletteType : int
     Collidable = 1,
     Noncollidable = 2,
     Semisolid = 3,
-    IdolFilter = 4
-    //Danger = 5
+    IdolFilter = 4,
+    Danger = 5
 }
 
 public class LevelDraw : MonoBehaviour
@@ -32,11 +32,13 @@ public class LevelDraw : MonoBehaviour
     [SerializeField] private LayerMask SafeCollidableLayer = new LayerMask();
     [SerializeField] private LayerMask IdolFilterLayer = new LayerMask();
     [SerializeField] private LayerMask SemisolidCollidableLayer = new LayerMask();
+    [SerializeField] private LayerMask DangerCollidableLayer = new LayerMask();
 
     private string[] tileTypes;
     private Dictionary<string, float> tileSizes;
     private Dictionary<string, float> tileUpdateRadiuses;
     private Dictionary<string, Tilemap> tilemaps;
+    private Dictionary<string, GameObject> layers;
     private Dictionary<string, PaletteType> paletteTypes;
     private Dictionary<string, List<Vector3Int>> tiles;
     private BoundsInt totalBounds;
@@ -46,6 +48,7 @@ public class LevelDraw : MonoBehaviour
 
     private Dictionary<string, Tile> loadedTilesFull;
     private Dictionary<string, Tile> loadedTilesSemisolid;
+    private Dictionary<string, Tile> loadedTilesOutline;
     private Dictionary<string, int> tileVariations;
     private List<string> tileNames;
 
@@ -59,6 +62,7 @@ public class LevelDraw : MonoBehaviour
         tileTypes = LevelParse.GetTileTypes();
         loadedTilesFull = new Dictionary<string, Tile>();
         loadedTilesSemisolid = new Dictionary<string, Tile>();
+        loadedTilesOutline = new Dictionary<string, Tile>();
         tileVariations = LevelParse.GetTileVariations();
         tileSizes = LevelParse.LoadTileData("sizes");
         tileUpdateRadiuses = LevelParse.LoadTileData("update_radiuses");
@@ -134,7 +138,7 @@ public class LevelDraw : MonoBehaviour
         if (!paletteName.Equals(""))
         {
             paletteTypes[paletteName]++;
-            if (paletteTypes[paletteName] > PaletteType.IdolFilter)
+            if (paletteTypes[paletteName] > PaletteType.Danger)
             {
                 paletteTypes[paletteName] = PaletteType.Collidable;
             }
@@ -150,6 +154,7 @@ public class LevelDraw : MonoBehaviour
             {
                 int[] layers = {8, 9, 14};
                 tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
+                tilemaps[entry.Key].GetComponent<CompositeCollider2D>().isTrigger = false;
                 tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(SafeCollidableLayer);
                 SwitchTilePhysicsShape(entry.Key, "full");
                 collider.enabled = true;
@@ -176,6 +181,14 @@ public class LevelDraw : MonoBehaviour
                 SwitchTilePhysicsShape(entry.Key, "full");
                 effector.surfaceArc = 360f;
             }
+            else if (entry.Value == PaletteType.Danger)
+            {
+                int[] layers = {8, 9, 14};
+                tilemaps[entry.Key].GetComponent<PlatformEffector2D>().colliderMask = LayerUtilities.LayerNumbersToMask(layers);
+                tilemaps[entry.Key].GetComponent<CompositeCollider2D>().isTrigger = true;
+                tilemaps[entry.Key].gameObject.layer = LayerUtilities.LayerNumber(DangerCollidableLayer);
+                SwitchTilePhysicsShape(entry.Key, "outline");
+            }
         }
     }
 
@@ -199,6 +212,13 @@ public class LevelDraw : MonoBehaviour
                 splitFileName = fileArray[j].Split(splitter);
                 fileName = splitFileName[splitFileName.Length - 1].Split('.')[0];
                 tileSprite = Resources.Load<Sprite>("Tiles/" + tileTypes[i] + "/" + fileName);
+                string tempName = tileSprite.name;
+                float spriteWidth = tileSprite.rect.width;
+                float spriteHeight = tileSprite.rect.height;
+                tileSprite = Sprite.Create(tileSprite.texture, tileSprite.rect,
+                    new Vector2(((tileSprite.pivot.x + ((spriteWidth % 200 == 0) ? -50 : 0)) / spriteWidth), 
+                    ((tileSprite.pivot.y + ((spriteHeight % 200 == 0) ? -50 : 0)) / spriteHeight)));
+                tileSprite.name = tempName;
 
                 tileSprite.OverridePhysicsShape(TilePicker.GeneratePhysicsShape(tileSizes[tileTypes[i]], tileSprite, "full"));
                 tile = ScriptableObject.CreateInstance("Tile") as Tile;
@@ -209,6 +229,11 @@ public class LevelDraw : MonoBehaviour
                 tile = ScriptableObject.CreateInstance("Tile") as Tile;
                 tile.sprite = Instantiate(tileSprite);
                 loadedTilesSemisolid.Add(fileName, Instantiate(tile));
+
+                tileSprite.OverridePhysicsShape(TilePicker.GeneratePhysicsShape(tileSizes[tileTypes[i]], tileSprite, "outline"));
+                tile = ScriptableObject.CreateInstance("Tile") as Tile;
+                tile.sprite = Instantiate(tileSprite);
+                loadedTilesOutline.Add(fileName, Instantiate(tile));
             }
         }
 
@@ -297,6 +322,7 @@ public class LevelDraw : MonoBehaviour
         if (tiles[id].Contains(location)) return;
         Dictionary<string, Tile> loadedTiles;
         if (paletteTypes[id] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
+        if (paletteTypes[id] == PaletteType.Danger) loadedTiles = loadedTilesOutline;
         else loadedTiles = loadedTilesFull;
         tiles[id].Add(location);
         tilemaps[id].SetTile(location, loadedTiles[TilePicker.GetTile(tiles[id], totalBounds, tileVariations, tileUpdateRadiuses, location, id, tileNames)]);
@@ -496,6 +522,10 @@ public class LevelDraw : MonoBehaviour
         {
             currentTiles = loadedTilesSemisolid;
         }
+        else if (generationType.Equals("outline"))
+        {
+            currentTiles = loadedTilesOutline;
+        }
         else return;
         
         for (int x = bounds.xMin; x <= bounds.xMax; x++)
@@ -611,6 +641,7 @@ public class LevelDraw : MonoBehaviour
     {
         Dictionary<string, Tile> loadedTiles;
         if (paletteTypes[id] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
+        else if (paletteTypes[id] == PaletteType.Danger) loadedTiles = loadedTilesOutline;
         else loadedTiles = loadedTilesFull;
         int updateRadius = Mathf.FloorToInt(tileUpdateRadiuses[id]);
         for (int x = -updateRadius; x <= updateRadius; x++)
@@ -633,18 +664,19 @@ public class LevelDraw : MonoBehaviour
         foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
         {
             if (paletteTypes[entry.Key] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
+            else if (paletteTypes[entry.Key] == PaletteType.Danger) loadedTiles = loadedTilesOutline;
             else loadedTiles = loadedTilesFull;
 
             for (int x = totalBounds.xMin; x <= totalBounds.xMax; x++)
             {
                 for (int y = totalBounds.yMin; y <= totalBounds.yMax; y++)
                 {
-                   if (tilemaps[entry.Key].GetTile<Tile>(new Vector3Int(x, y, 0)) != null
+                    if (tilemaps[entry.Key].GetTile<Tile>(new Vector3Int(x, y, 0)) != null
                     && !(x == 0 && y == 0))
-                {
-                    tilemaps[entry.Key].SetTile(new Vector3Int(x, y, 0),
-                        loadedTiles[TilePicker.GetTile(tiles[entry.Key], totalBounds, tileVariations, tileUpdateRadiuses, new Vector3Int(x, y, 0), entry.Key, tileNames)]);
-                }
+                    {
+                        tilemaps[entry.Key].SetTile(new Vector3Int(x, y, 0),
+                            loadedTiles[TilePicker.GetTile(tiles[entry.Key], totalBounds, tileVariations, tileUpdateRadiuses, new Vector3Int(x, y, 0), entry.Key, tileNames)]);
+                    }
                 }
             }
         }
@@ -656,6 +688,7 @@ public class LevelDraw : MonoBehaviour
         foreach (KeyValuePair<string, List<Vector3Int>> entry in tiles)
         {
             if (paletteTypes[entry.Key] == PaletteType.Semisolid) loadedTiles = loadedTilesSemisolid;
+            else if (paletteTypes[entry.Key] == PaletteType.Danger) loadedTiles = loadedTilesOutline;
             else loadedTiles = loadedTilesFull;
             tilemaps[entry.Key].ClearAllTiles();
             foreach (Vector3Int location in entry.Value)
@@ -677,10 +710,11 @@ public class LevelDraw : MonoBehaviour
 
     private void CastIntToPaletteType(Dictionary<string, int> intPalettes)
     {
-        paletteTypes.Clear();
+        //paletteTypes.Clear();
         foreach (KeyValuePair<string, int> entry in intPalettes)
         {
-            paletteTypes.Add(entry.Key, (PaletteType)entry.Value);
+            if (paletteTypes.ContainsKey(entry.Key)) paletteTypes[entry.Key] = (PaletteType)entry.Value;
+            else paletteTypes.Add(entry.Key, (PaletteType)entry.Value);
         }
     }
 
@@ -697,11 +731,22 @@ public class LevelDraw : MonoBehaviour
     private void SetPaletteLayerOrder(Dictionary<string, int> layerOrder)
     {
         Vector3 pos;
+        Vector3 swapPos;
         foreach (KeyValuePair<string, int> entry in layerOrder)
         {
-            pos = tilemaps[entry.Key].transform.position;
-            tilemaps[entry.Key].transform.position = new Vector3(pos.x, pos.y, entry.Value);
+            pos = layers[entry.Key].transform.position;
+            foreach (KeyValuePair<string, GameObject> currentMap in layers)
+            {
+                if (currentMap.Value.transform.position.z == entry.Value)
+                {
+                    swapPos = currentMap.Value.transform.position;
+                    currentMap.Value.transform.position = new Vector3(swapPos.x, swapPos.y, pos.z);
+                    break;
+                }
+            }
+            layers[entry.Key].transform.position = new Vector3(pos.x, pos.y, entry.Value);
         }
+        
     }
 
     public void New()
@@ -719,22 +764,23 @@ public class LevelDraw : MonoBehaviour
     {
         try
         {
+            tiles = LevelParse.ParseFile(path);
             foreach (KeyValuePair<string, List<Vector3Int>> entry in tiles)
             {
                 tilemaps[entry.Key].ClearAllTiles();
             }
-            tiles = LevelParse.ParseFile(path);
             CastIntToPaletteType(LevelParse.ParsePaletteInfo(path, ">"));
             SetPaletteLayerOrder(LevelParse.ParsePaletteInfo(path, "!"));
+
+            DrawTiles();
+            UpdatePalettes();
+            playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
         }
         catch (NullReferenceException)
         {
-            Debug.Log("Could not parse level file.");
+            Debug.Log(path + ": Could not parse level file.");
             return;
         }
-        DrawTiles();
-        UpdatePalettes();
-        playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());
     }
 
     public void Save()

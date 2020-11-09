@@ -60,7 +60,7 @@ public class TilePicker : MonoBehaviour
         { output += "h"; }
         if (!tileNames.Contains(output + "_" + type + "_1"))
         {
-            return "_" + type + "_1";
+            return "_" + type + "_" + Random.Range(1, tileVariations["_" + type] + 1);
         }
 
         int random = Random.Range(1, tileVariations[output + "_" + type] + 1);
@@ -76,7 +76,7 @@ public class TilePicker : MonoBehaviour
 
         if (!tileNames.Contains(output + "_" + type + "_" + random))
         {
-            return "_" + type + "_1";
+            return "_" + type + "_" + Random.Range(1, tileVariations["_" + type] + 1);
         }
 
         return output + "_" + type + "_" + random;
@@ -286,7 +286,89 @@ public class TilePicker : MonoBehaviour
 
     private static IList<Vector2[]> GeneratePhysicsShapeOutline(float size, Sprite sprite)
     {
-        return null;
+        IList<Vector2[]> output = new List<Vector2[]>();
+        Vector2 center = sprite.rect.size / 2f;
+        float radius = center.x * size;
+        string spriteName = sprite.name.Split('_')[0];
+
+        List<string> spikesUp = new List<string>() { "g", "defgh", "egh", "dfg" };
+        List<string> spikesDown = new List<string>() { "abcde", "abd", "b", "bce" };
+
+        List<Vector2> vertices = new List<Vector2>();
+        if (spriteName.Equals("g"))
+        {
+            vertices.Add(new Vector2(center.x - radius, 0));
+            vertices.Add(new Vector2(center.x + radius, 0));
+            vertices.Add(new Vector2(center.x + radius, 15f));
+            vertices.Add(new Vector2(center.x - radius, 15f));
+            output.Add(vertices.ToArray());
+        }
+        else if (spriteName.Equals("defgh"))
+        {
+            vertices.Add(new Vector2(0, 0));
+            vertices.Add(new Vector2(sprite.rect.size.x, 0));
+            vertices.Add(new Vector2(sprite.rect.size.x, 15f));
+            vertices.Add(new Vector2(0, 15f));
+            output.Add(vertices.ToArray());
+        }
+        else if (spriteName.Equals("egh"))
+        {
+            vertices.Add(new Vector2(center.x - radius, 0));
+            vertices.Add(new Vector2(sprite.rect.size.x, 0));
+            vertices.Add(new Vector2(sprite.rect.size.x, 15f));
+            vertices.Add(new Vector2(center.x - radius, 15f));
+            output.Add(vertices.ToArray());
+        }
+        else if (spriteName.Equals("dfg"))
+        {
+            vertices.Add(new Vector2(0, 0));
+            vertices.Add(new Vector2(center.x + radius, 0));
+            vertices.Add(new Vector2(center.x + radius, 15f));
+            vertices.Add(new Vector2(0, 15f));
+            output.Add(vertices.ToArray());
+        }
+        else if (spriteName.Equals("b"))
+        {
+            vertices.Add(new Vector2(center.x - radius, sprite.rect.size.y));
+            vertices.Add(new Vector2(center.x + radius, sprite.rect.size.y));
+            vertices.Add(new Vector2(center.x + radius, sprite.rect.size.y - 15f));
+            vertices.Add(new Vector2(center.x - radius, sprite.rect.size.y - 15f));
+            output.Add(vertices.ToArray());
+        }
+        else if (spriteName.Equals("abcde"))
+        {
+            vertices.Add(new Vector2(0, sprite.rect.size.y));
+            vertices.Add(new Vector2(sprite.rect.size.x, sprite.rect.size.y));
+            vertices.Add(new Vector2(sprite.rect.size.x, sprite.rect.size.y - 15f));
+            vertices.Add(new Vector2(0, sprite.rect.size.y - 15f));
+            output.Add(vertices.ToArray());
+        }
+        else if (spriteName.Equals("abd"))
+        {
+            vertices.Add(new Vector2(0, sprite.rect.size.y));
+            vertices.Add(new Vector2(center.x + radius, sprite.rect.size.y));
+            vertices.Add(new Vector2(center.x + radius, sprite.rect.size.y - 15f));
+            vertices.Add(new Vector2(0, sprite.rect.size.y - 15f));
+            output.Add(vertices.ToArray());
+        }
+        else if (spriteName.Equals("bce"))
+        {
+            vertices.Add(new Vector2(center.x - radius, sprite.rect.size.y));
+            vertices.Add(new Vector2(sprite.rect.size.x, sprite.rect.size.y));
+            vertices.Add(new Vector2(sprite.rect.size.x, sprite.rect.size.y - 15f));
+            vertices.Add(new Vector2(center.x - radius, sprite.rect.size.y - 15f));
+            output.Add(vertices.ToArray());
+        }
+        else 
+        {
+            vertices.Add(center);
+            vertices.Add(center);
+            vertices.Add(center);
+            vertices.Add(center);
+            output.Add(vertices.ToArray());
+        }
+
+        return output;
     }
 
     private static void AngleSort(Vector2[] vertices, Vector2 center)

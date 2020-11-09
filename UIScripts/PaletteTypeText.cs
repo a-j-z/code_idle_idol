@@ -9,11 +9,13 @@ public class PaletteTypeText : MonoBehaviour
     private LevelDraw draw;
 
     private Text text;
+    private bool valuesSet = false;
 
 
     public void SetValues(string palette, LevelDraw draw)
     {
         text = GetComponent<Text>();
+        valuesSet = true;
 
         this.palette = palette;
         this.draw = draw;
@@ -21,23 +23,29 @@ public class PaletteTypeText : MonoBehaviour
 
     void Update()
     {
-        switch (draw.GetPalette(palette))
+        if (valuesSet)
         {
-            case 1:
-                text.text = "Collidable";
-                break;
-            case 2:
-                text.text = "Noncollidable";
-                break;
-            case 3:
-                text.text = "Semisolid";
-                break;
-            case 4:
-                text.text = "Idol Filter";
-                break;
-            default:
-                text.text = "";
-                break;
+            switch (draw.GetPalette(palette))
+            {
+                case 1:
+                    text.text = "Collidable";
+                    break;
+                case 2:
+                    text.text = "Noncollidable";
+                    break;
+                case 3:
+                    text.text = "Semisolid";
+                    break;
+                case 4:
+                    text.text = "Idol Filter";
+                    break;
+                case 5:
+                    text.text = "Danger";
+                    break;
+                default:
+                    text.text = "";
+                    break;
+            }
         }
     }
 }

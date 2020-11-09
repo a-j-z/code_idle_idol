@@ -7,7 +7,8 @@ public class MouseUtilities : MonoBehaviour
 {
     public static Vector3 WorldSpace(Camera cam)
     {
-        return cam.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 loc = cam.ScreenToWorldPoint(Input.mousePosition);
+        return  new Vector3(loc.x, loc.y, 0);
     }
     
     public static Vector3Int GridSpace(Camera cam)

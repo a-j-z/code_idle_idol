@@ -69,6 +69,7 @@ public class PaletteDrag : MonoBehaviour
         }
         if (Input.GetMouseButtonUp(0) && isDragged)
         {
+            Debug.Log(m_Name);
             action.Invoke(m_Name,
                 draw.GetLayer(Mathf.Floor(
                     (contentRt.position.y - parentRt.position.y - 10.0f) / 80.0f)));

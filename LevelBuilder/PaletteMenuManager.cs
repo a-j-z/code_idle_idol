@@ -3,17 +3,29 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
+public enum ButtonType : int
+{
+    Tilemap = 1,
+    Player = 2,
+    Idol = 3,
+    Gates = 4,
+    BasicEnemy = 5
+}
+
 public class PaletteMenuManager : MonoBehaviour
 {
     public GameObject paletteMenu;
     public GameObject paletteMenuContent;
+
     public GameObject paletteButton;
+    public GameObject playerButton;
+
     public RectTransform moveLayerPreview;
     public RectTransform paletteSelect;
     public LevelDraw draw;
     public Color[] typeColors;
 
-    private List<GameObject> paletteButtons;
+    private List<GameObject> buttons;
     private string[] tileTypes;
     private Vector3 velocity = Vector3.zero;
 
@@ -21,14 +33,22 @@ public class PaletteMenuManager : MonoBehaviour
     {
         paletteMenu.SetActive(false);
         tileTypes = LevelParse.GetTileTypes();
-        paletteButtons = new List<GameObject>();
+        buttons = new List<GameObject>();
         RectTransform rt;
 
+        GameObject currentPlayerButton = Instantiate(playerButton, paletteMenuContent.transform);
+        currentPlayerButton.GetComponent<PlayerButton>().SetValues(
+            "Player", Resources.Load<Sprite>("Tiles/" + tileTypes[0] + "/_" + tileTypes[0] + "_1"), 
+            moveLayerPreview, 0, draw);
+        currentPlayerButton.GetComponent<PlayerButton>().SetPlayerValues();
+        buttons.Add(currentPlayerButton);
         for (int i = 0; i < tileTypes.Length; i++)
         {
             GameObject currentButton = Instantiate(paletteButton, paletteMenuContent.transform);
             currentButton.GetComponent<PaletteButton>().SetValues(
-                tileTypes[i], typeColors, Resources.Load<Sprite>("Tiles/" + tileTypes[i] + "/_" + tileTypes[i] + "_1"), moveLayerPreview, i, draw);
+                tileTypes[i], Resources.Load<Sprite>("Tiles/" + tileTypes[i] + "/_" + tileTypes[i] + "_1"), 
+                moveLayerPreview, i, draw);
+            currentButton.GetComponent<PaletteButton>().SetPaletteValues(typeColors, draw);
 
             rt = currentButton.gameObject.GetComponent<RectTransform>();
             Vector3 destination = paletteButton.GetComponent<RectTransform>().position +
@@ -38,7 +58,7 @@ public class PaletteMenuManager : MonoBehaviour
 
             rt.position = destination;
 
-            paletteButtons.Add(currentButton);
+            buttons.Add(currentButton);
         }
         paletteSelect.transform.SetAsLastSibling();
     }
@@ -46,13 +66,20 @@ public class PaletteMenuManager : MonoBehaviour
     void Update()
     {
         int i = 0;
-        foreach (GameObject button in paletteButtons)
+        foreach (GameObject button in buttons)
         {
-            Vector3 destination = paletteButton.GetComponent<RectTransform>().position +
-                new Vector3(paletteMenuContent.GetComponent<RectTransform>().rect.width / 2, 0, 0) +
-                paletteMenuContent.GetComponent<RectTransform>().position +
-                new Vector3(0, draw.GetLayer(button.GetComponent<PaletteButton>().GetName()) * -80f, 0);
-            if (!button.gameObject.transform.GetChild(4).gameObject.GetComponent<PaletteDrag>().IsDragged())
+            Vector3 offset = Vector3.zero;
+            if (button.GetComponent<PaletteButton>() != null)
+            {
+                offset = new Vector3(0, draw.GetLayer(button.GetComponent<PaletteButton>().GetName()) * -80f - 10f, 0);
+            }
+            else if (button.GetComponent<PlayerButton>() != null)
+            {
+                offset = new Vector3(0, -10, 0);
+            }
+            Vector3 destination = new Vector3(paletteMenuContent.GetComponent<RectTransform>().rect.width / 2, 0, 0) +
+                paletteMenuContent.GetComponent<RectTransform>().position + offset;
+            if (!button.gameObject.transform.Find("PaletteDrag").gameObject.GetComponent<PaletteDrag>().IsDragged())
             {
                 if (Vector3.Distance(button.GetComponent<RectTransform>().position, destination) > 0.1f)
                 {
@@ -69,9 +96,12 @@ public class PaletteMenuManager : MonoBehaviour
                 button.transform.SetAsLastSibling();
                 paletteSelect.transform.SetAsLastSibling();
             }
-            if (button.GetComponent<PaletteButton>().GetName().Equals(tileTypes[draw.GetPalette()]))
+            if (button.GetComponent<PaletteButton>() != null)
             {
-                paletteSelect.position = button.GetComponent<RectTransform>().position;
+                if (button.GetComponent<PaletteButton>().GetName().Equals(tileTypes[draw.GetPalette()]))
+                {
+                    paletteSelect.position = button.GetComponent<RectTransform>().position;
+                }
             }
             i++;
         }     

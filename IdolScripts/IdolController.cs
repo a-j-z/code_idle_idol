@@ -21,6 +21,9 @@ public class IdolController : MonoBehaviour
     [SerializeField] private LayerMask collisionUpLayer = new LayerMask();
     [SerializeField] private LayerMask idolLayer = new LayerMask();
     [SerializeField] private LayerMask carriedIdolLayer = new LayerMask();
+    [SerializeField] private LayerMask dangerLayer = new LayerMask();
+    public PlayManager playManager;
+
     private LayerMask collisionDownLayer;
 
     private Rigidbody2D m_Rigidbody;
@@ -35,6 +38,7 @@ public class IdolController : MonoBehaviour
     private bool collisionUpEnter;
     private bool collisionLeft;
     private bool collisionRight;
+    private bool collisionDanger;
     private float collisionCarryPlayer;
     private float collisionCarry;
     private bool collisionTeleport;
@@ -52,6 +56,7 @@ public class IdolController : MonoBehaviour
     private float teleportRechargeTimer;
     private Vector2 velocityBuffer;
     private Vector2 playerVelocityBuffer;
+    private float yVelocityBuffer;
 
     void Start()
     {
@@ -87,7 +92,8 @@ public class IdolController : MonoBehaviour
         collisionDownEnter = collisionDown;
         collisionDown = CollisionUtilities.GetCollision(this.gameObject,
             Vector3.down * -speedStretchY + Vector3.right * speedStretchX, 
-            new Vector2(0.25f, 0.6f), collisionDownLayer, true);
+            new Vector2(0.25f, 0.6f), collisionDownLayer, true) ||
+            (m_Velocity.y > yVelocityBuffer && yVelocityBuffer <= 0f && !isCarried);
         collisionDownEnter = collisionDown != collisionDownEnter;
 
         speedStretchY = m_Rigidbody.velocity.y * Time.fixedDeltaTime;
@@ -102,6 +108,9 @@ public class IdolController : MonoBehaviour
 
         collisionRight = CollisionUtilities.GetCollision(this.gameObject,
             Vector3.right * (m_boxCollider.size.x / 2f) + Vector3.down * 0.05f, new Vector2(0.1f, 0.5f), collisionUpLayer);
+
+        collisionDanger = CollisionUtilities.GetCollision(this.gameObject,
+            Vector3.zero, new Vector2(0.3f, 0.6f), dangerLayer);
 
         collisionCarryPlayer = CollisionUtilities.GetCollisionDistance(player.gameObject,
             Vector2.zero, Vector2.up, carryHeight + 0.6f, player.GetCollisionUpLayer());
@@ -122,6 +131,7 @@ public class IdolController : MonoBehaviour
         teleportTimer -= Time.fixedDeltaTime;
         teleportRechargeTimer -= Time.fixedDeltaTime;
         rechargeIndicator.SetFill(teleportRechargeTimer / teleportRechargeDuration);
+        yVelocityBuffer = m_Velocity.y;
     }
 
     public void Spawn()
@@ -131,6 +141,10 @@ public class IdolController : MonoBehaviour
 
     public void Move(bool interact, bool extendInteract, bool interactSecondary, bool teleport)
     {
+        if (collisionDanger && !isCarried)
+        {
+            playManager.Play(Vector3.left);
+        }
         if (collisionDown && m_Rigidbody.velocity.y <= 0.1f && !isCarried)
         {
             m_Rigidbody.velocity = new Vector2(0, m_Rigidbody.velocity.y);

@@ -14,12 +14,14 @@ public class PaletteTypeButton : MonoBehaviour
 
     private RectTransform rt;
     private Image im;
+    private bool valuesSet = false;
 
     public void SetValues(string palette, Color[] typeColors, LevelDraw draw)
     {
         rt = GetComponent<RectTransform>();
         im = GetComponent<Image>();
         this.typeColors = typeColors;
+        valuesSet = true;
 
         typeText = gameObject.transform.GetChild(0).gameObject;
         typeText.GetComponent<PaletteTypeText>().SetValues(palette, draw);
@@ -32,10 +34,14 @@ public class PaletteTypeButton : MonoBehaviour
 
     void Update()
     {
-        if (MouseUtilities.TouchingUI(rt) && Input.GetMouseButtonDown(0))
+        if (valuesSet)
         {
-            action.Invoke(palette);
+            if (MouseUtilities.TouchingUI(rt) && Input.GetMouseButtonDown(0))
+            {
+                action.Invoke(palette);
+            }
+            im.color = typeColors[draw.GetPalette(palette) - 1];
         }
-        im.color = typeColors[draw.GetPalette(palette) - 1];
+        
     }
 }
