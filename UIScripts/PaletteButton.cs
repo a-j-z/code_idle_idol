@@ -11,7 +11,7 @@ public class PaletteButton : BaseButton
 
     public void SetPaletteValues(Color[] typeColors, LevelDraw draw)
     {
-        paletteTypeButton = gameObject.transform.GetChild(3).gameObject;
+        paletteTypeButton = transform.GetChild(4).gameObject;
         paletteTypeButton.GetComponent<PaletteTypeButton>().SetValues(GetName(), typeColors, draw);
     }
 }

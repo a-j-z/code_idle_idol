@@ -48,7 +48,7 @@ public class LevelParse : MonoBehaviour
                             throw new NullReferenceException();
                         }
                     }
-                    else if (words[0] != ">" && words[0] != "!")
+                    else if (words[0] != ">" && words[0] != "!" && words[0] != "+")
                     {
                         if (words.Length != 3)
                         {
@@ -85,9 +85,10 @@ public class LevelParse : MonoBehaviour
 
     // > = palette type
     // ! = palette layer order
-    public static Dictionary<string, int> ParsePaletteInfo(string path, string identifier)
+    // + = object data
+    public static Dictionary<string, List<float>> ParsePaletteInfo(string path, string identifier)
     {
-        Dictionary<string, int> output = new Dictionary<string, int>();
+        Dictionary<string, List<float>> output = new Dictionary<string, List<float>>();
 
         StreamReader reader;
         try
@@ -101,7 +102,8 @@ public class LevelParse : MonoBehaviour
         }
 
         string line;
-        int paletteType;
+        float data;
+        List<float> dataList;
 
         int lineNumber = 1;
         using (reader)
@@ -116,14 +118,20 @@ public class LevelParse : MonoBehaviour
                     {
                         try
                         {
-                            paletteType = Int32.Parse(words[2]);
+                            dataList = new List<float>();
+                            for (int i = 2; i < words.Length; i++)
+                            {
+                                data = float.Parse(words[i]);
+                                dataList.Add(data);
+                            }
                         }
                         catch (FormatException)
                         {
                             Debug.Log(path + ": Line " + lineNumber + ": unable to convert value " + words[2] + " to int.");
                             throw new NullReferenceException();
                         }
-                        output.Add(words[1], paletteType);
+                        
+                        output.Add(words[1], dataList);
                     }
                 }
                 lineNumber++;

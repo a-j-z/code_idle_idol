@@ -19,10 +19,10 @@ public class BaseButton : MonoBehaviour
     public void SetValues(string name, Sprite preview, RectTransform moveLayerPreview, int index, LevelDraw draw)
     {
         rt = GetComponent<RectTransform>();
-        nameText = gameObject.transform.GetChild(0).GetComponent<Text>();
-        m_Preview = gameObject.transform.GetChild(1).GetComponent<Image>();
+        nameText = gameObject.transform.GetChild(1).GetComponent<Text>();
+        m_Preview = gameObject.transform.GetChild(2).GetComponent<Image>();
         
-        paletteDrag = gameObject.transform.GetChild(2).gameObject;
+        paletteDrag = gameObject.transform.GetChild(3).gameObject;
         paletteDrag.GetComponent<PaletteDrag>().SetValues(name, moveLayerPreview, draw);
 
         nameText.text = TextUtilities.UnderscoresToSpaces(name);

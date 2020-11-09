@@ -33,14 +33,16 @@ public class PlayerMovement : MonoBehaviour
         }
         m_jumpTimer -= Time.deltaTime;
         jump = m_jumpTimer > 0;
-        extendJump = inputManager.GetInput("jump");
-
-        
+        extendJump = inputManager.GetInput("jump");  
     }
 
     void FixedUpdate()
     {
         controller.Move(horizontalMove, speed  * Time.fixedDeltaTime, jump, extendJump);
-        
+    }
+
+    public void SetSpeed(float speed)
+    {
+        this.speed = speed;
     }
 }

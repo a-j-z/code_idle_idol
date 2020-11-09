@@ -109,7 +109,7 @@ public class PlayerController : MonoBehaviour
     public void Spawn(Vector3 spawnLocation, Vector3 spawnDirection)
     {
         if (!isInit) Init();
-        m_Rigidbody.position = spawnLocation;
+        m_Rigidbody.position = new Vector3(spawnLocation.x, spawnLocation.y, transform.position.z);
         if (spawnDirection.Equals(Vector3.down))
         {
             transitionJump = true;
@@ -250,5 +250,10 @@ public class PlayerController : MonoBehaviour
     public LayerMask GetCollisionUpLayer()
     {
         return collisionUpLayer;
+    }
+
+    public void SetJumpHeight(float jumpHeight)
+    {
+        this.jumpHeight = jumpHeight;
     }
 }

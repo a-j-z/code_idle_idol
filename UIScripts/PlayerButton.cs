@@ -4,8 +4,15 @@ using UnityEngine;
 
 public class PlayerButton : BaseButton
 {
-    public void SetPlayerValues()
+    private GameObject playerSpeedInput;
+    private GameObject playerJumpHeightInput;
+
+    public void SetPlayerValues(float speed, float jumpHeight, GameObject player)
     {
-        return;
+        playerSpeedInput = transform.GetChild(4).gameObject;
+        playerSpeedInput.GetComponent<PlayerSpeedInput>().SetValues(speed, player);
+
+        playerJumpHeightInput = transform.GetChild(5).gameObject;
+        playerJumpHeightInput.GetComponent<PlayerJumpHeightInput>().SetValues(jumpHeight, player);
     }
 }

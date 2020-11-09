@@ -25,6 +25,7 @@ public class LevelDraw : MonoBehaviour
 {
     public Camera buildCam;
     public Camera playCam;
+    public GameObject player;
     public SpawnController spawns;
     public ExitController exits;
     public GateController gates;
@@ -67,6 +68,7 @@ public class LevelDraw : MonoBehaviour
         tileSizes = LevelParse.LoadTileData("sizes");
         tileUpdateRadiuses = LevelParse.LoadTileData("update_radiuses");
         tilemaps = new Dictionary<string, Tilemap>();
+        layers = new Dictionary<string, GameObject>();
         paletteTypes = new Dictionary<string, PaletteType>();
         tiles = new Dictionary<string, List<Vector3Int>>();
         currentTool = Tools.Draw;
@@ -255,17 +257,19 @@ public class LevelDraw : MonoBehaviour
 
         GameObject currentMap;
         
+        player.transform.position = Vector3.zero;
+        layers.Add("Player", player);
         for (int i = 0; i < tileTypes.Length; i++)
         {
             currentMap = Instantiate(tilemap, transform);
             currentMap.name = tileTypes[i];
-            currentMap.transform.position = Vector3.forward * i + new Vector3(-0.5f, -0.5f, 0);
+            currentMap.transform.position = Vector3.forward * (i + 1) + new Vector3(-0.5f, -0.5f, 0);
             tilemaps.Add(tileTypes[i], currentMap.GetComponent<Tilemap>());
+            layers.Add(tileTypes[i], currentMap);
             //tilemapPhysicsShapes.Add(tileTypes[i], "full");
             paletteTypes.Add(tileTypes[i], PaletteType.Collidable);
             tiles.Add(tileTypes[i], new List<Vector3Int>());
         }
-
         Destroy(tilemap);
     }
 
@@ -576,13 +580,13 @@ public class LevelDraw : MonoBehaviour
 
     public float GetLayer(string layer)
     {
-        return tilemaps[layer].transform.position.z;
+        return layers[layer].transform.position.z;
     }
 
     public string GetLayer(float z)
     {
         string output = "";
-        foreach(KeyValuePair<string, Tilemap> entry in tilemaps)
+        foreach(KeyValuePair<string, GameObject> entry in layers)
         {
             if (entry.Value.transform.position.z == z)
             {
@@ -595,7 +599,7 @@ public class LevelDraw : MonoBehaviour
     
     public void MoveLayer(string layer, string behind)
     {
-        float layerZ = tilemaps[layer].transform.position.z;
+        float layerZ = layers[layer].transform.position.z;
         float behindZ;
         if (tilemaps.ContainsKey(behind))
         {
@@ -605,7 +609,7 @@ public class LevelDraw : MonoBehaviour
 
         if (layerZ < behindZ)
         {
-            foreach(KeyValuePair<string, Tilemap> entry in tilemaps)
+            foreach(KeyValuePair<string, GameObject> entry in layers)
             {
                 if (entry.Value.transform.position.z <= behindZ &&
                     entry.Value.transform.position.z > layerZ)
@@ -614,14 +618,14 @@ public class LevelDraw : MonoBehaviour
                 }
             }
 
-            tilemaps[layer].transform.position =
-                new Vector3(tilemaps[layer].transform.position.x,
-                tilemaps[layer].transform.position.y,
+            layers[layer].transform.position =
+                new Vector3(layers[layer].transform.position.x,
+                layers[layer].transform.position.y,
                 behindZ);
         }
         else if (layerZ > behindZ)
         {
-            foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
+            foreach (KeyValuePair<string, GameObject> entry in layers)
             {
                 if (entry.Value.transform.position.z > behindZ &&
                     entry.Value.transform.position.z < layerZ)
@@ -630,9 +634,9 @@ public class LevelDraw : MonoBehaviour
                 }
             }
 
-            tilemaps[layer].transform.position =
-                new Vector3(tilemaps[layer].transform.position.x,
-                tilemaps[layer].transform.position.y,
+            layers[layer].transform.position =
+                new Vector3(layers[layer].transform.position.x,
+                layers[layer].transform.position.y,
                 behindZ + 1.0f);
         }
     }
@@ -708,45 +712,56 @@ public class LevelDraw : MonoBehaviour
         return output;
     }
 
-    private void CastIntToPaletteType(Dictionary<string, int> intPalettes)
+    private void CastIntToPaletteType(Dictionary<string, List<float>> intPalettes)
     {
         //paletteTypes.Clear();
-        foreach (KeyValuePair<string, int> entry in intPalettes)
+        foreach (KeyValuePair<string, List<float>> entry in intPalettes)
         {
-            if (paletteTypes.ContainsKey(entry.Key)) paletteTypes[entry.Key] = (PaletteType)entry.Value;
-            else paletteTypes.Add(entry.Key, (PaletteType)entry.Value);
+            if (paletteTypes.ContainsKey(entry.Key)) paletteTypes[entry.Key] = (PaletteType)((int)entry.Value[0]);
+            else paletteTypes.Add(entry.Key, (PaletteType)((int)entry.Value[0]));
         }
     }
 
     private Dictionary<string, int> GetPaletteLayerOrder()
     {
         Dictionary<string, int> output = new Dictionary<string, int>();
-        foreach (KeyValuePair<string, Tilemap> entry in tilemaps)
+        foreach (KeyValuePair<string, GameObject> entry in layers)
         {
             output.Add(entry.Key, Mathf.FloorToInt(entry.Value.transform.position.z));
         }
         return output;
     }
 
-    private void SetPaletteLayerOrder(Dictionary<string, int> layerOrder)
+    private void SetPaletteLayerOrder(Dictionary<string, List<float>> layerOrder)
     {
         Vector3 pos;
         Vector3 swapPos;
-        foreach (KeyValuePair<string, int> entry in layerOrder)
+        foreach (KeyValuePair<string, List<float>> entry in layerOrder)
         {
             pos = layers[entry.Key].transform.position;
-            foreach (KeyValuePair<string, GameObject> currentMap in layers)
+            foreach (KeyValuePair<string, GameObject> currentLayer in layers)
             {
-                if (currentMap.Value.transform.position.z == entry.Value)
+                if (currentLayer.Value.transform.position.z == (int)entry.Value[0])
                 {
-                    swapPos = currentMap.Value.transform.position;
-                    currentMap.Value.transform.position = new Vector3(swapPos.x, swapPos.y, pos.z);
+                    swapPos = currentLayer.Value.transform.position;
+                    currentLayer.Value.transform.position = new Vector3(swapPos.x, swapPos.y, pos.z);
                     break;
                 }
             }
-            layers[entry.Key].transform.position = new Vector3(pos.x, pos.y, entry.Value);
+            layers[entry.Key].transform.position = new Vector3(pos.x, pos.y, (int)entry.Value[0]);
         }
-        
+    }
+
+    private void SetObjectData(Dictionary<string, List<float>> objectData)
+    {
+        foreach (KeyValuePair<string, List<float>> entry in objectData)
+        {
+            if (entry.Key.Equals("Player"))
+            {
+                player.GetComponent<PlayerMovement>().speed = entry.Value[0];
+                player.GetComponent<PlayerController>().jumpHeight = entry.Value[1];
+            }
+        }
     }
 
     public void New()
@@ -771,6 +786,7 @@ public class LevelDraw : MonoBehaviour
             }
             CastIntToPaletteType(LevelParse.ParsePaletteInfo(path, ">"));
             SetPaletteLayerOrder(LevelParse.ParsePaletteInfo(path, "!"));
+            SetObjectData(LevelParse.ParsePaletteInfo(path, "+"));
 
             DrawTiles();
             UpdatePalettes();
