@@ -36,10 +36,7 @@ public class MoveAlongLine : MonoBehaviour
             if (posChange.x > 0) transform.localScale = new Vector3(1,1,1);
             else if (posChange.x < 0) transform.localScale = new Vector3(-1,1,1);
             int index = movingForward ? 1 : 0;
-            if ((transform.position.x > path.GetNodeLocation(index).x && transform.position.x + posChange.x < path.GetNodeLocation(index).x) ||
-                (transform.position.x < path.GetNodeLocation(index).x && transform.position.x + posChange.x > path.GetNodeLocation(index).x) ||
-                (transform.position.y > path.GetNodeLocation(index).y && transform.position.y + posChange.x < path.GetNodeLocation(index).y) ||
-                (transform.position.y < path.GetNodeLocation(index).y && transform.position.y + posChange.x > path.GetNodeLocation(index).y))
+            if (Vector2.Distance((Vector2)transform.position, (Vector2)path.GetNodeLocation(index)) <= speed * Time.deltaTime)
             {
                 movingForward = !movingForward;
             }

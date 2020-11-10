@@ -30,6 +30,7 @@ public class LevelDraw : MonoBehaviour
     public ExitController exits;
     public GateController gates;
     public PaletteMenuManager paletteMenuManager;
+    public ObjectManager objectManager;
     [SerializeField] private LayerMask SafeCollidableLayer = new LayerMask();
     [SerializeField] private LayerMask IdolFilterLayer = new LayerMask();
     [SerializeField] private LayerMask SemisolidCollidableLayer = new LayerMask();
@@ -46,6 +47,7 @@ public class LevelDraw : MonoBehaviour
 
     private Tools currentTool;
     private int currentPalette;
+    private string currentLayer;
 
     private Dictionary<string, Tile> loadedTilesFull;
     private Dictionary<string, Tile> loadedTilesSemisolid;
@@ -73,6 +75,7 @@ public class LevelDraw : MonoBehaviour
         tiles = new Dictionary<string, List<Vector3Int>>();
         currentTool = Tools.Draw;
         currentPalette = 0;
+        currentLayer = "Player";
         rect = new GameObject("Rect");
         rect.AddComponent<RectDraw>();
         rect.transform.parent = transform;
@@ -87,7 +90,7 @@ public class LevelDraw : MonoBehaviour
     void Update()
     {
         if ((Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1)) && !PlayManager.GetIsPlay()
-            && !paletteMenuManager.IsPaletteMenuActive())
+            && !paletteMenuManager.IsPaletteMenuActive() && currentPalette != -1)
         {
             if (currentTool == Tools.Draw)
             {
@@ -100,7 +103,7 @@ public class LevelDraw : MonoBehaviour
             }
         }
         if ((Input.GetMouseButton(0) || Input.GetMouseButton(1)) && !PlayManager.GetIsPlay()
-            && !paletteMenuManager.IsPaletteMenuActive())
+            && !paletteMenuManager.IsPaletteMenuActive() && currentPalette != -1)
         {
             bool draw;
             draw = Input.GetMouseButton(0);
@@ -122,7 +125,7 @@ public class LevelDraw : MonoBehaviour
             rect.SetActive(false);
         }
         if ((Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1)) && !PlayManager.GetIsPlay()
-            && !paletteMenuManager.IsPaletteMenuActive())
+            && !paletteMenuManager.IsPaletteMenuActive() && currentPalette != -1)
         {
             bool draw;
             draw = Input.GetMouseButtonUp(0);
@@ -562,6 +565,20 @@ public class LevelDraw : MonoBehaviour
         currentPalette = palette;
     }
 
+    public void SetLayer(string layer)
+    {
+        currentLayer = layer;
+        SetPalette(-1);
+        for (int i = 0; i < tileTypes.Length; i++)
+        {
+            if (tileTypes[i] == layer)
+            {
+                SetPalette(i);
+                break;
+            }
+        }
+    }
+
     public int GetPalette()
     {
         return currentPalette;
@@ -569,18 +586,26 @@ public class LevelDraw : MonoBehaviour
 
     public int GetPalette(string paletteName)
     {
+        if (!paletteTypes.ContainsKey(paletteName))
+            return -1;
         return (int)paletteTypes[paletteName];
     }
 
     public Vector2 GetCurrentPaletteSize()
     {
+        if (currentPalette == -1) return Vector2.zero;
         return loadedTilesFull["_" + tileTypes[currentPalette] + "_1"].sprite.rect.size;// /
             //loadedTilesFull["_" + tileTypes[currentPalette] + "_1"].sprite.pixelsPerUnit;
     }
 
-    public float GetLayer(string layer)
+    public float GetLayerIndex(string layer)
     {
         return layers[layer].transform.position.z;
+    }
+
+    public string GetLayer()
+    {
+        return currentLayer;
     }
 
     public string GetLayer(float z)
@@ -639,6 +664,16 @@ public class LevelDraw : MonoBehaviour
                 layers[layer].transform.position.y,
                 behindZ + 1.0f);
         }
+    }
+
+    public void AddLayer(string layer, GameObject newObject)
+    {
+        foreach(KeyValuePair<string, GameObject> entry in layers)
+        {
+            entry.Value.transform.position += Vector3.forward;
+        }
+        newObject.transform.position = Vector3.zero;
+        layers[layer] = newObject;
     }
 
     private void UpdateSurroundingTiles(Vector3Int location, string id)
@@ -756,10 +791,15 @@ public class LevelDraw : MonoBehaviour
     {
         foreach (KeyValuePair<string, List<float>> entry in objectData)
         {
-            if (entry.Key.Equals("Player"))
+            if (layers.ContainsKey(entry.Key))
             {
-                player.GetComponent<PlayerMovement>().speed = entry.Value[0];
-                player.GetComponent<PlayerController>().jumpHeight = entry.Value[1];
+                layers[entry.Key].GetComponent<ObjectValueManager>().SetValues(entry.Value);
+            }
+            else
+            {
+                GameObject newObject = paletteMenuManager.AddObject(TextUtilities.StripNumbers(entry.Key), entry.Value);
+                newObject.GetComponent<ObjectValueManager>().SetValues(entry.Value);
+                layers[entry.Key] = newObject;
             }
         }
     }
@@ -784,10 +824,10 @@ public class LevelDraw : MonoBehaviour
             {
                 tilemaps[entry.Key].ClearAllTiles();
             }
+            SetObjectData(LevelParse.ParsePaletteInfo(path, "+"));
             CastIntToPaletteType(LevelParse.ParsePaletteInfo(path, ">"));
             SetPaletteLayerOrder(LevelParse.ParsePaletteInfo(path, "!"));
-            SetObjectData(LevelParse.ParsePaletteInfo(path, "+"));
-
+            
             DrawTiles();
             UpdatePalettes();
             playCam.GetComponent<PlayCameraController>().UpdateBounds(CalculateBounds());

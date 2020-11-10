@@ -18,6 +18,6 @@ public class PaletteController : MonoBehaviour
 
     void Update()
     {
-        text.text = TextUtilities.UnderscoresToSpaces(tileTypes[draw.GetPalette()]);
+        text.text = TextUtilities.UnderscoresToSpaces(draw.GetLayer());
     }
 }

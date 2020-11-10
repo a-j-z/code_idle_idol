@@ -6,7 +6,7 @@ public class NodeLineDraw : MonoBehaviour
 {
     public Sprite node;
     public Camera cam;
-    //public LevelDraw draw;
+    public LevelDraw draw;
     
     private GameObject line;
     private LineRenderer lineRenderer;
@@ -15,6 +15,7 @@ public class NodeLineDraw : MonoBehaviour
 
     private Vector3 mousePositionBuffer = Vector3.zero;
     private int currentlyDragged;
+    private bool isSelected;
 
     void Start()
     {
@@ -23,7 +24,7 @@ public class NodeLineDraw : MonoBehaviour
 
     void Update()
     {
-        if (PlayManager.GetIsPlay())
+        if (PlayManager.GetIsPlay() || !isSelected)
         {
             lineRenderer.enabled = false;
             for (int i = 0; i < nodes.Length; i++) nodes[i].SetActive(false);
@@ -33,9 +34,9 @@ public class NodeLineDraw : MonoBehaviour
             lineRenderer.enabled = true;
             for (int i = 0; i < nodes.Length; i++) nodes[i].SetActive(true);
         }
-
-        if (Input.GetMouseButtonDown(0)) mousePositionBuffer = MouseUtilities.WorldSpace(cam);
-        if (Input.GetMouseButton(0))
+        isSelected = gameObject.name.Equals(draw.GetLayer());
+        if (Input.GetMouseButtonDown(0) && isSelected) mousePositionBuffer = MouseUtilities.WorldSpace(cam);
+        if (Input.GetMouseButton(0) && isSelected)
         {
             Vector3 positionChange = MouseUtilities.WorldSpace(cam) - mousePositionBuffer;
             for (int i = 0; i < nodes.Length; i++)
@@ -52,7 +53,7 @@ public class NodeLineDraw : MonoBehaviour
             }   
             mousePositionBuffer = MouseUtilities.WorldSpace(cam);
         }
-        if (Input.GetMouseButtonUp(0))
+        if (Input.GetMouseButtonUp(0) && isSelected)
         {
             for (int i = 0; i < nodes.Length; i++)
             {
@@ -69,6 +70,7 @@ public class NodeLineDraw : MonoBehaviour
         line = new GameObject("Line");
         lineRenderer = new LineRenderer();
         currentlyDragged = -1;
+        isSelected = false;
 
         isSetup = true;
         line.transform.position = new Vector3(0, 0, 1);
@@ -98,5 +100,39 @@ public class NodeLineDraw : MonoBehaviour
     public Vector3 GetNodeLocation(int nodeIndex)
     {
         return nodes[nodeIndex].transform.position;
+    }
+
+    public void SetSpeed(float speed)
+    {
+        if (!isSetup) SetupNodeLineDraw();
+        transform.GetComponentInChildren<MoveAlongLine>().speed = speed;
+    }
+
+    public void SetNodeAX(float xPos)
+    { 
+        if (!isSetup) SetupNodeLineDraw();
+        Vector3 pos = nodes[0].transform.position; 
+        nodes[0].transform.position = new Vector3(xPos, pos.y, pos.z);
+    }
+
+    public void SetNodeAY(float yPos) 
+    { 
+        if (!isSetup) SetupNodeLineDraw();
+        Vector3 pos = nodes[0].transform.position; 
+        nodes[0].transform.position = new Vector3(pos.x, yPos, pos.z);
+    }
+
+    public void SetNodeBX(float xPos) 
+    { 
+        if (!isSetup) SetupNodeLineDraw();
+        Vector3 pos = nodes[1].transform.position; 
+        nodes[1].transform.position = new Vector3(xPos, pos.y, pos.z);
+    }
+
+    public void SetNodeBY(float yPos) 
+    { 
+        if (!isSetup) SetupNodeLineDraw();
+        Vector3 pos = nodes[1].transform.position; 
+        nodes[1].transform.position = new Vector3(pos.x, yPos, pos.z);
     }
 }

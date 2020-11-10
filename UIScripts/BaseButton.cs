@@ -11,12 +11,12 @@ public class BaseButton : MonoBehaviour
     private Text nameText;
     private string m_Name;
     private Image m_Preview;
-    private UnityAction<int> action;
-    private int index;
+    private UnityAction<string> action;
+    private string layer;
 
     private GameObject paletteDrag;
 
-    public void SetValues(string name, Sprite preview, RectTransform moveLayerPreview, int index, LevelDraw draw)
+    public void SetValues(string name, Sprite preview, RectTransform moveLayerPreview, string layer, LevelDraw draw)
     {
         rt = GetComponent<RectTransform>();
         nameText = gameObject.transform.GetChild(1).GetComponent<Text>();
@@ -44,15 +44,15 @@ public class BaseButton : MonoBehaviour
             m_Preview.GetComponent<RectTransform>().position += new Vector3(
                 (m_Preview.GetComponent<RectTransform>().sizeDelta.y - m_Preview.GetComponent<RectTransform>().sizeDelta.x) / 2f, 0, 0);
         }
-        this.index = index;
-        action += draw.SetPalette;
+        this.layer = layer;
+        action += draw.SetLayer;
     }
 
     void Update()
     {
         if (MouseUtilities.TouchingUI(rt) && Input.GetMouseButtonDown(0))
         {
-            action.Invoke(index);
+            action.Invoke(layer);
         }
     }
 
